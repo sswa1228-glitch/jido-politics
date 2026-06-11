@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>지도정치</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F4F6FA;--surface:#fff;--surface2:#F0F2F7;--border:#DDE1EC;
+  --shadow:rgba(60,70,100,.10);
+  --left-2:#3B7DD8;--left-3:#1A4DA0;--left-1:#90B8E8;
+  --right-2:#D84040;--right-3:#9A1010;--right-1:#F0A0A0;
+  --center-col:#9BA3B8;--empty:#D8DCE8;
+  --gov:#B8860B;--gov-dim:rgba(184,134,11,.12);
+  --accent:#2C5FD4;--text:#1A1F36;--text-dim:#5A6280;--text-faint:#9BA3B8;
+}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* NAV */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:50px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 4px var(--shadow);z-index:20;}
+.logo{font-size:15px;font-weight:800;letter-spacing:-.02em;}
+.logo span{color:var(--accent);}
+.nbtn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;}
+.nbtn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.nbtn-ghost:hover{background:var(--surface2);}
+.nbtn-primary{background:var(--accent);color:#fff;}
+
+/* TICKER */
+.ticker{display:flex;align-items:center;gap:12px;padding:0 16px;height:28px;background:#EEF1FA;border-bottom:1px solid #D8DCF0;flex-shrink:0;overflow:hidden;}
+.ticker-label{font-size:9px;font-weight:800;color:var(--accent);letter-spacing:.1em;white-space:nowrap;}
+.ticker-track{display:flex;gap:32px;animation:ticker-anim 34s linear infinite;white-space:nowrap;}
+@keyframes ticker-anim{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{font-size:11px;color:var(--text-dim);}
+.ticker-item::before{content:"● ";font-size:5px;color:var(--text-faint);}
+.ticker-gov{color:var(--gov);font-weight:600;}
+.ticker-gov::before{color:var(--gov)!important;}
+
+/* MAIN LAYOUT — 지도 60% : 패널 40% */
+.main-body{display:flex;flex:1;overflow:hidden;}
+.map-wrap{flex:0 0 60%;position:relative;overflow:hidden;transition:flex .3s ease;}
+.map-wrap.map-narrow{flex:0 0 38%;}
+.side-panel{flex:0 0 40%;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-left:1px solid var(--border);box-shadow:-2px 0 8px var(--shadow);transition:flex .3s ease;}
+.side-panel.panel-wide{flex:0 0 62%;}
+
+/* MAP */
+#map-svg{width:100%;height:100%;display:block;background:#D6E4F0;}
+.district-sido, .district {
+  stroke: rgba(255,255,255,0.75);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  cursor: pointer;
+  transition: filter 0.15s ease, stroke-width 0.15s ease;
+}
+.district-sido:hover, .district:hover {
+  filter: brightness(0.85);
+  stroke: #ffffff !important;
+}
+.sel-ring{fill:none;pointer-events:none;}
+
+/* MAP OVERLAYS */
+.zoom-tabs{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;z-index:30;box-shadow:0 2px 10px var(--shadow);}
+.zoom-tab{padding:5px 14px;font-size:11px;font-weight:600;color:var(--text-faint);cursor:pointer;transition:all .18s;white-space:nowrap;border-right:1px solid var(--border);}
+.zoom-tab:last-child{border-right:none;}
+.zoom-tab.active{background:var(--accent);color:#fff;font-weight:700;}
+.zoom-tab:not(.active):hover{background:var(--surface2);color:var(--text-dim);}
+.my-loc-btn{position:absolute;top:10px;left:10px;z-index:30;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--text-dim);cursor:pointer;box-shadow:0 2px 8px var(--shadow);transition:all .15s;font-family:inherit;}
+.my-loc-btn:hover{border-color:var(--accent);color:var(--accent);}
+.gov-loc-btn{position:absolute;top:44px;left:10px;z-index:30;background:var(--gov-dim);border:1px solid rgba(184,134,11,.3);border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--gov);cursor:pointer;box-shadow:0 2px 8px var(--shadow);transition:all .15s;font-family:inherit;}
+.gov-loc-btn:hover{background:rgba(184,134,11,.2);}
+.zoom-ctrl{position:absolute;bottom:64px;right:10px;z-index:30;display:flex;flex-direction:column;gap:3px;}
+.zoom-ctrl-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text-dim);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px var(--shadow);transition:all .15s;font-family:inherit;}
+.zoom-ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+#map-tooltip{position:absolute;opacity:0;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:10px;padding:10px 13px;pointer-events:none;font-size:.8rem;box-shadow:0 6px 20px var(--shadow);transition:opacity .15s;z-index:50;min-width:200px;max-width:240px;transform:translate(-50%,-110%);}
+#map-tooltip::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border-width:6px 6px 0;border-style:solid;border-color:rgba(255,255,255,.97) transparent transparent transparent;}
+
+.map-legend{position:absolute;bottom:12px;left:10px;z-index:20;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 10px;box-shadow:0 2px 8px var(--shadow);}
+.leg-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);margin-bottom:3px;}
+.leg-row:last-child{margin-bottom:0;}
+.leg-swatch{width:11px;height:11px;border-radius:2px;flex-shrink:0;}
+.leg-divider{height:1px;background:var(--border);margin:2px 0;}
+.level-label{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:20;font-size:10px;color:var(--text-faint);background:var(--surface);border:1px solid var(--border);padding:3px 12px;border-radius:10px;pointer-events:none;white-space:nowrap;box-shadow:0 1px 4px var(--shadow);}
+
+.map-loader-wrap{position:absolute;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;}
+.map-loader{border:3px solid #EEF1FA;border-top:3px solid var(--accent);border-radius:50%;width:26px;height:26px;animation:spin-anim .9s linear infinite;}
+@keyframes spin-anim{to{transform:rotate(360deg)}}
+
+.map-expand-btn{position:absolute;top:10px;right:10px;z-index:30;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;color:var(--text-dim);cursor:pointer;box-shadow:0 2px 8px var(--shadow);transition:all .15s;font-family:inherit;}
+.map-expand-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ══ SIDE PANEL ══ */
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;}
+.panel-title{font-size:14px;font-weight:700;color:var(--text);}
+.panel-subtitle{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.pol-chip{display:inline-flex;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.pol-chip.left{background:rgba(59,125,216,.1);color:var(--left-2);}
+.pol-chip.right{background:rgba(216,64,64,.1);color:var(--right-2);}
+.pol-chip.center{background:rgba(155,163,184,.18);color:#6B7280;}
+.pol-chip.news-tag{background:#FEF9E7;color:#B7860B;}
+
+.stats-section{padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.stats-bar{height:7px;border-radius:5px;overflow:hidden;display:flex;margin-bottom:5px;background:var(--border);}
+.stats-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);}
+
+.breadcrumb{display:flex;align-items:center;gap:4px;padding:6px 16px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-faint);flex-wrap:wrap;flex-shrink:0;}
+.bc-link:hover{color:var(--accent);}
+
+.panel-tabs{display:flex;padding:0 16px;border-bottom:2px solid var(--border);flex-shrink:0;}
+.panel-tab{padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-faint);border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;margin-bottom:-2px;}
+.panel-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.panel-tab:not(.active):hover{color:var(--text-dim);}
+
+.opinions-toolbar{padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px;}
+.search-wrap{position:relative;}
+.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface2);outline:none;font-family:inherit;}
+.search-input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-faint);pointer-events:none;}
+.filter-row{display:flex;align-items:center;gap:4px;}
+.filter-btn{padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-faint);transition:all .15s;font-family:inherit;}
+.filter-btn.active{font-weight:800;}
+.filter-btn[data-lean="all"].active{background:#EEF1FA;color:var(--accent);border-color:var(--accent);}
+.filter-btn[data-lean="left"].active{background:rgba(59,125,216,.1);color:var(--left-2);border-color:var(--left-2);}
+.filter-btn[data-lean="center"].active{background:rgba(155,163,184,.15);color:#6B7280;border-color:#9BA3B8;}
+.filter-btn[data-lean="right"].active{background:rgba(216,64,64,.1);color:var(--right-2);border-color:var(--right-2);}
+.sort-sep{margin-left:auto;height:16px;width:1px;background:var(--border);}
+.sort-btn{padding:3px 7px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--text-faint);transition:all .15s;font-family:inherit;}
+.sort-btn.active{background:var(--surface2);color:var(--text);border-color:var(--border);}
+
+.panel-scroll{flex:1;overflow-y:auto;padding-bottom:0;}
+.panel-scroll::-webkit-scrollbar{width:3px;}
+.panel-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+.post-item{padding:10px 16px;border-bottom:1px solid var(--border);transition:background .1s;}
+.post-item:hover{background:var(--surface2);}
+.post-header{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap;}
+.post-loc{font-size:10px;color:var(--text-faint);}
+.ai-verified{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:9px;color:#6B7;font-weight:700;background:rgba(100,180,0,.08);padding:1px 5px;border-radius:8px;}
+.post-body-text{font-size:12px;color:var(--text);line-height:1.55;margin-bottom:5px;}
+.post-footer{display:flex;align-items:center;gap:6px;font-size:11px;color:#C0C4D0;}
+.vote-btn{cursor:pointer;font-size:12px;font-weight:700;color:var(--text-faint);transition:color .1s;background:none;border:none;padding:0;font-family:inherit;}
+.vote-btn:hover{color:var(--accent);}
+.vote-score{font-size:12px;font-weight:700;min-width:24px;text-align:center;}
+.post-action{cursor:pointer;font-size:11px;}
+.post-action:hover{color:var(--text-dim);}
+.post-time{margin-left:auto;font-size:10px;color:var(--text-faint);}
+
+.news-item{padding:10px 16px;border-bottom:1px solid var(--border);}
+.news-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.news-title{font-size:12px;color:var(--text);margin-bottom:4px;line-height:1.5;}
+.news-link{font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;}
+
+.color-pick{display:flex;gap:5px;margin-bottom:10px;}
+.color-btn{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:inherit;}
+.color-btn-left{background:rgba(59,125,216,.08);color:var(--left-2);border-color:var(--left-1);}
+.color-btn-center{background:rgba(155,163,184,.12);color:#6B7280;border-color:var(--center-col);}
+.color-btn-right{background:rgba(216,64,64,.08);color:var(--right-2);border-color:var(--right-1);}
+.color-btn.selected{font-weight:800;box-shadow:0 0 0 2px currentColor;}
+.write-textarea{width:100%;min-height:100px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12px;color:var(--text);outline:none;font-family:inherit;resize:vertical;background:var(--surface2);transition:all .2s;}
+.write-textarea:focus{border-color:var(--accent);}
+.write-textarea:disabled{background:#E5E7EB;cursor:not-allowed;color:var(--text-faint);}
+.write-submit-btn{margin-top:10px;width:100%;background:var(--accent);color:#fff;padding:9px;border-radius:8px;font-size:13px;font-weight:800;border:none;cursor:pointer;font-family:inherit;transition:all .2s;}
+.write-submit-btn:hover:not(:disabled){filter:brightness(1.08);}
+.write-submit-btn:disabled{background:#9BA3B8;cursor:not-allowed;}
+
+/* ══ MOBILE ══ */
+@media(max-width:767px){
+  .main-body{position:relative;}
+  .map-wrap{flex:1!important;width:100%!important;}
+  .side-panel{display:none!important;}
+  .mobile-panel{
+    position:fixed;bottom:0;left:0;right:0;z-index:200;
+    background:var(--surface);
+    border-radius:16px 16px 0 0;
+    box-shadow:0 -4px 24px rgba(60,70,100,.18);
+    transform:translateY(100%);
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;
+    max-height:85vh;
+    overflow:hidden;
+  }
+  .mobile-panel.open{transform:translateY(0);}
+  .mobile-drag-handle{width:100%;padding:10px 0 6px;display:flex;align-items:center;justify-content:center;cursor:grab;flex-shrink:0;}
+  .mobile-drag-handle::after{content:'';width:36px;height:4px;border-radius:2px;background:var(--border);}
+  .mobile-panel-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px;flex-shrink:0;}
+  .mobile-panel-title{font-size:14px;font-weight:700;}
+  .mobile-panel-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-faint);padding:4px;}
+  .mobile-panel-body{flex:1;overflow-y:auto;}
+  .mobile-map-tap{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    z-index:100;background:var(--accent);color:#fff;
+    padding:10px 24px;border-radius:24px;font-size:13px;font-weight:700;
+    box-shadow:0 4px 16px rgba(44,95,212,.35);border:none;cursor:pointer;
+    font-family:inherit;display:none;
+  }
+}
+@media(min-width:768px){
+  .mobile-panel{display:none!important;}
+  #mobile-panel-overlay{display:none!important;}
+  .mobile-map-tap{display:none!important;}
+  .mobile-drag-handle{display:none;}
+}
+#mobile-panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:190;}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="logo">지도<span>정치</span></div>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button class="nbtn nbtn-ghost">로그인</button>
+    <button class="nbtn nbtn-primary">회원가입</button>
+  </div>
+</nav>
+
+<div class="ticker">
+  <span class="ticker-label">LIVE</span>
+  <div class="ticker-track">
+    <span class="ticker-item ticker-gov">🏛️ 국회 본회의, 예산안 처리 D-3 … 여야 막판 협상 중</span>
+    <span class="ticker-item">서울시장 재개발 규제 완화 발표 … 시민 단체 반발</span>
+    <span class="ticker-item ticker-gov">🏛️ 대통령실 규제 혁신 로드맵 전격 발표</span>
+    <span class="ticker-item">부산 보궐선거 공식 선거운동 시작</span>
+    <span class="ticker-item">경기 남부 복지 예산 삭감 논란 확산</span>
+    <span class="ticker-item ticker-gov">🏛️ 국회 본회의, 예산안 처리 D-3 … 여야 막판 협상 중</span>
+    <span class="ticker-item">서울시장 재개발 규제 완화 발표 … 시민 단체 반발</span>
+    <span class="ticker-item ticker-gov">🏛️ 대통령실 규제 혁신 로드맵 전격 발표</span>
+    <span class="ticker-item">부산 보궐선거 공식 선거운동 시작</span>
+    <span class="ticker-item">경기 남부 복지 예산 삭감 논란 확산</span>
+  </div>
+</div>
+
+<div class="main-body">
+  <!-- ══ MAP ══ -->
+  <div class="map-wrap" id="map-container">
+    <div class="map-loader-wrap" id="map-loader">
+      <div class="map-loader"></div>
+      <p style="font-size:13px;color:#5A6280;font-weight:500;margin-top:10px;">지도를 그리는 중…</p>
+    </div>
+    <svg id="map-svg"></svg>
+    <div class="zoom-tabs">
+      <div class="zoom-tab active" id="ztab-sido"    onclick="window.goLevel('sido')"    >🏙️ 광역시도</div>
+      <div class="zoom-tab"        id="ztab-sigungu" onclick="window.goLevel('sigungu')" >📍 시군구</div>
+    </div>
+    
+    <!-- ★ 플로팅 버튼들 (좌상단) -->
+    <button class="my-loc-btn" onclick="window.goMyLocation()">📍 내 위치</button>
+    <button class="gov-loc-btn" onclick="window.goLevel('sido')">🏛️ 중앙정부</button>
+    
+    <button class="map-expand-btn" id="map-expand-btn" onclick="window.togglePanelExpand()" title="패널 확장">⇔</button>
+    <div class="zoom-ctrl">
+      <button class="zoom-ctrl-btn" onclick="window.adjustZoom(1.6)">+</button>
+      <button class="zoom-ctrl-btn" onclick="window.adjustZoom(0.625)">−</button>
+      <button class="zoom-ctrl-btn" onclick="window.resetMap()" style="font-size:13px;">⊙</button>
+    </div>
+    <div id="map-tooltip"></div>
+    <div class="map-legend">
+      <div class="leg-row"><div class="leg-swatch" style="background:#1A4DA0"></div>진보 압도</div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#3B7DD8"></div>진보 우세</div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#90B8E8"></div>진보 약세</div>
+      <div class="leg-divider"></div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#9BA3B8"></div>중도</div>
+      <div class="leg-divider"></div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#F0A0A0"></div>보수 약세</div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#D84040"></div>보수 우세</div>
+      <div class="leg-row"><div class="leg-swatch" style="background:#9A1010"></div>보수 압도</div>
+    </div>
+    <div class="level-label" id="level-label">광역시도 단위</div>
+  </div>
+
+  <!-- ══ SIDE PANEL (데스크탑) ══ -->
+  <div class="side-panel" id="side-panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title" id="panel-title">전국 (중앙정부)</div>
+        <div class="panel-subtitle" id="panel-subtitle">지도에서 광역시도를 클릭하여 지역 여론을 확인하세요.</div>
+      </div>
+      <div class="pol-chip center" id="panel-chip" style="visibility:hidden">—</div>
+    </div>
+
+    <div class="stats-section">
+      <div class="stats-bar">
+        <div id="stat-bar-l" style="width:0%;background:#3B7DD8;border-radius:4px 0 0 4px;"></div>
+        <div id="stat-bar-c" style="width:0%;background:#9BA3B8;"></div>
+        <div id="stat-bar-r" style="width:0%;background:#D84040;border-radius:0 4px 4px 0;"></div>
+      </div>
+      <div class="stats-labels">
+        <span>진보 <strong id="stat-l" style="color:#3B7DD8">—</strong></span>
+        <span>중도 <strong id="stat-c" style="color:#6B7280">—</strong></span>
+        <span>보수 <strong id="stat-r" style="color:#D84040">—</strong></span>
+      </div>
+    </div>
+
+    <div class="breadcrumb" id="breadcrumb">
+      <span class="bc-link" onclick="window.goLevel('sido')" style="cursor:pointer;">🏙️ 전국 (중앙정부)</span>
+    </div>
+
+    <!-- 탭: 의견 / 권역뉴스 -->
+    <div class="panel-tabs">
+      <div class="panel-tab active" id="tab-opinions" onclick="window.setTab('opinions')">💬 의견</div>
+      <div class="panel-tab"        id="tab-news"     onclick="window.setTab('news')"    >📰 권역 뉴스</div>
+    </div>
+
+    <!-- 의견 탭: 목록 + 하단 작성폼 -->
+    <div id="opinions-pane" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="opinions-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="search-input" placeholder="의견 검색…">
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn active" data-lean="all"    onclick="window.setFilter('all')"   >전체</button>
+          <button class="filter-btn"        data-lean="left"   onclick="window.setFilter('left')"  >진보</button>
+          <button class="filter-btn"        data-lean="center" onclick="window.setFilter('center')">중도</button>
+          <button class="filter-btn"        data-lean="right"  onclick="window.setFilter('right')" >보수</button>
+          <div class="sort-sep"></div>
+          <button class="sort-btn active" data-sort="hot"      onclick="window.setSort('hot')"     >🔥</button>
+          <button class="sort-btn"        data-sort="new"      onclick="window.setSort('new')"     >🆕</button>
+          <button class="sort-btn"        data-sort="top"      onclick="window.setSort('top')"     >⬆</button>
+          <button class="sort-btn"        data-sort="comments" onclick="window.setSort('comments')">💬</button>
+        </div>
+      </div>
+      <div class="panel-scroll" id="opinions-list">
+        <div style="padding:32px 16px;text-align:center;color:#9BA3B8;font-size:13px;">지역을 선택해주세요</div>
+      </div>
+      <!-- ★ 의견 작성 폼 -->
+      <div id="write-inline" style="border-top:2px solid var(--border);background:var(--surface2);padding:10px 16px;flex-shrink:0;">
+        <div style="font-size:11px;font-weight:600;color:var(--left-2);background:rgba(59,125,216,.08);padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px;">
+          📍 <span id="write-district-display">지역 미선택</span>
+        </div>
+        <div class="color-pick" style="margin-bottom:7px;">
+          <button class="color-btn color-btn-left"            data-lean="left"   onclick="window.selectColor(this)">진보</button>
+          <button class="color-btn color-btn-center selected" data-lean="center" onclick="window.selectColor(this)">중도 ✓</button>
+          <button class="color-btn color-btn-right"           data-lean="right"  onclick="window.selectColor(this)">보수</button>
+        </div>
+        <div style="display:flex;gap:7px;align-items:flex-end;">
+          <textarea id="write-textarea" placeholder="현재 위치한 지역 또는 전국에서만 의견을 작성할 수 있습니다." disabled style="flex:1;min-height:56px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;resize:none;background:var(--surface);"></textarea>
+          <button id="write-submit-btn" disabled style="background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;border:none;cursor:pointer;white-space:nowrap;font-family:inherit;">불가</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 뉴스 탭 -->
+    <div id="news-pane" style="display:none;flex:1;overflow-y:auto;" class="panel-scroll">
+      <div id="news-list">
+        <div style="padding:32px 16px;text-align:center;color:#9BA3B8;font-size:13px;">지도에서 지역을 선택해주세요</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mobile-panel-overlay"></div>
+<div class="mobile-panel" id="mobile-panel">
+  <div class="mobile-drag-handle" id="mobile-drag-handle"></div>
+  <div class="mobile-panel-header">
+    <div>
+      <div class="mobile-panel-title" id="mobile-panel-title">전국</div>
+      <div id="mobile-panel-bc" style="font-size:10px;color:#9BA3B8;margin-top:2px;"></div>
+    </div>
+    <button class="mobile-panel-close" id="mobile-panel-close">✕</button>
+  </div>
+  <div style="padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="height:7px;border-radius:5px;overflow:hidden;display:flex;margin-bottom:5px;background:var(--border);">
+      <div id="m-stat-bar-l" style="width:0%;background:#3B7DD8;border-radius:4px 0 0 4px;"></div>
+      <div id="m-stat-bar-c" style="width:0%;background:#9BA3B8;"></div>
+      <div id="m-stat-bar-r" style="width:0%;background:#D84040;border-radius:0 4px 4px 0;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#9BA3B8;">
+      <span>진보 <strong id="m-stat-l" style="color:#3B7DD8">—</strong></span>
+      <span>중도 <strong id="m-stat-c" style="color:#6B7280">—</strong></span>
+      <span>보수 <strong id="m-stat-r" style="color:#D84040">—</strong></span>
+    </div>
+  </div>
+  <div style="display:flex;padding:0 16px;border-bottom:2px solid var(--border);flex-shrink:0;">
+    <div class="panel-tab active" id="m-tab-opinions" onclick="window.mSetTab('opinions')" style="padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;white-space:nowrap;">💬 의견</div>
+    <div class="panel-tab"        id="m-tab-news"     onclick="window.mSetTab('news')"     style="padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#9BA3B8;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;">📰 뉴스</div>
+  </div>
+  <div id="m-opinions-pane" style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
+    <div style="padding:7px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+      <div style="position:relative;">
+        <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:13px;color:#9BA3B8;pointer-events:none;">🔍</span>
+        <input type="text" id="m-search-input" placeholder="의견 검색…" style="width:100%;padding:6px 10px 6px 28px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#F0F2F7;outline:none;font-family:inherit;">
+      </div>
+      <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
+        <button class="filter-btn active" data-lean="all"    onclick="window.setFilter('all')"   >전체</button>
+        <button class="filter-btn"        data-lean="left"   onclick="window.setFilter('left')"  >진보</button>
+        <button class="filter-btn"        data-lean="center" onclick="window.setFilter('center')">중도</button>
+        <button class="filter-btn"        data-lean="right"  onclick="window.setFilter('right')" >보수</button>
+        <div class="sort-sep"></div>
+        <button class="sort-btn active" data-sort="hot"      onclick="window.setSort('hot')"     >🔥</button>
+        <button class="sort-btn"        data-sort="new"      onclick="window.setSort('new')"     >🆕</button>
+        <button class="sort-btn"        data-sort="top"      onclick="window.setSort('top')"     >⬆</button>
+        <button class="sort-btn"        data-sort="comments" onclick="window.setSort('comments')">💬</button>
+      </div>
+    </div>
+    <div id="m-opinions-list" style="flex:1;overflow-y:auto;min-height:0;padding-bottom:4px;">
+      <div style="padding:24px 16px;text-align:center;color:#9BA3B8;font-size:13px;">지역을 선택해주세요</div>
+    </div>
+    <div style="border-top:2px solid var(--border);background:#F0F2F7;padding:10px 16px;flex-shrink:0;">
+      <div style="font-size:11px;font-weight:600;color:#3B7DD8;background:rgba(59,125,216,.08);padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;margin-bottom:7px;">
+        📍 <span id="m-write-loc">지역 미선택</span>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:7px;">
+        <button class="color-btn color-btn-left"            data-lean="left"   onclick="window.selectColor(this)">진보</button>
+        <button class="color-btn color-btn-center selected" data-lean="center" onclick="window.selectColor(this)">중도 ✓</button>
+        <button class="color-btn color-btn-right"           data-lean="right"  onclick="window.selectColor(this)">보수</button>
+      </div>
+      <div style="display:flex;gap:7px;align-items:flex-end;">
+        <textarea id="m-write-textarea" placeholder="현재 위치한 지역 또는 전국에서만 작성할 수 있습니다." disabled style="flex:1;min-height:50px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:#1A1F36;outline:none;font-family:inherit;resize:none;background:#fff;"></textarea>
+        <button id="m-write-submit-btn" disabled onclick="window.mSubmitPost()" style="background:#2C5FD4;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;border:none;cursor:pointer;font-family:inherit;">불가</button>
+      </div>
+    </div>
+  </div>
+  <div id="m-news-pane" style="flex:1;overflow-y:auto;display:none;">
+    <div id="m-news-list"><div style="padding:24px 16px;text-align:center;color:#9BA3B8;font-size:13px;">지역을 선택해주세요</div></div>
+  </div>
+</div>
+
+<button class="mobile-map-tap" id="mobile-map-tap" onclick="window.openMobilePanel()">
+  📋 의견 보기
+</button>
+
+<script>
+var NEWS_DATA={"11":[{"tag":"서울","title":"서울시장 재개발 규제 완화 발표 … 시민 단체 즉각 반발"},{"tag":"서울","title":"서울시 복지관 예산 15% 삭감 논란 … 구청장들 반대 성명"},{"tag":"서울","title":"한강 수상버스 노선 확대 계획 발표"}],"26":[{"tag":"부산","title":"부산 보궐선거 공식 선거운동 시작"},{"tag":"부산","title":"부산항 신항 개발 2단계 착공"},{"tag":"부산","title":"해운대 재개발 갈등 중재 협의체 구성"}],"27":[{"tag":"대구","title":"대구 수성구 교육 특구 지정 신청"},{"tag":"대구","title":"대구 도시철도 4호선 예비타당성 통과"},{"tag":"대구","title":"대구 경북 행정통합 논의 재가동"}],"41":[{"tag":"경기","title":"경기 남부 복지 예산 삭감 논란 확산"},{"tag":"경기","title":"경기도 GTX-D 노선 추가 검토"},{"tag":"경기","title":"경기 북부 특별자치도 설치 법안 발의"}],"default":[{"tag":"전국","title":"국회 본회의 예산안 처리 D-3 … 여야 막판 협상"},{"tag":"전국","title":"대통령실 규제 혁신 로드맵 전격 발표"},{"tag":"전국","title":"기재부 내년 예산 편성 기준 발표"}]};
+
+var ALL_POSTS=[{"id":1,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"center","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":101,"votes_dn":7,"comments":24,"views":1694,"mins_ago":476,"user":"익명70","hot_score":142},{"id":2,"sido":"36","sigungu":null,"electoral":null,"sido_name":"세종특별자치시","sigungu_name":null,"lean":"left","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":284,"votes_dn":64,"comments":0,"views":1753,"mins_ago":1151,"user":"익명73","hot_score":220},{"id":3,"sido":"30","sigungu":null,"electoral":null,"sido_name":"대전광역시","sigungu_name":null,"lean":"left","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":259,"votes_dn":49,"comments":23,"views":688,"mins_ago":1321,"user":"익명21","hot_score":256},{"id":4,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":240,"votes_dn":13,"comments":28,"views":402,"mins_ago":299,"user":"익명35","hot_score":283},{"id":5,"sido":"47","sigungu":null,"electoral":null,"sido_name":"경상북도","sigungu_name":null,"lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":360,"votes_dn":68,"comments":9,"views":214,"mins_ago":873,"user":"익명52","hot_score":310},{"id":6,"sido":"27","sigungu":null,"electoral":null,"sido_name":"대구광역시","sigungu_name":null,"lean":"left","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":295,"votes_dn":59,"comments":10,"views":1887,"mins_ago":2208,"user":"익명44","hot_score":256},{"id":7,"sido":"47","sigungu":null,"electoral":null,"sido_name":"경상북도","sigungu_name":null,"lean":"right","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":397,"votes_dn":70,"comments":15,"views":729,"mins_ago":2174,"user":"익명61","hot_score":357},{"id":8,"sido":"50","sigungu":null,"electoral":null,"sido_name":"제주특별자치도","sigungu_name":null,"lean":"left","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":112,"votes_dn":18,"comments":60,"views":834,"mins_ago":571,"user":"익명59","hot_score":214},{"id":9,"sido":"11","sigungu":null,"electoral":null,"sido_name":"서울특별시","sigungu_name":null,"lean":"left","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":26,"votes_dn":3,"comments":80,"views":90,"mins_ago":1471,"user":"익명65","hot_score":183},{"id":10,"sido":"28","sigungu":null,"electoral":null,"sido_name":"인천광역시","sigungu_name":null,"lean":"center","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":258,"votes_dn":62,"comments":7,"views":1342,"mins_ago":1936,"user":"익명98","hot_score":210},{"id":11,"sido":"28","sigungu":null,"electoral":null,"sido_name":"인천광역시","sigungu_name":null,"lean":"left","text":"이 지역 출신 국회의원이 지역 현안에 너무 무관심합니다.","votes_up":152,"votes_dn":33,"comments":11,"views":45,"mins_ago":1993,"user":"익명55","hot_score":141},{"id":12,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":0,"votes_dn":0,"comments":61,"views":309,"mins_ago":114,"user":"익명11","hot_score":122},{"id":13,"sido":"36","sigungu":null,"electoral":null,"sido_name":"세종특별자치시","sigungu_name":null,"lean":"left","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":341,"votes_dn":59,"comments":14,"views":1779,"mins_ago":1603,"user":"익명23","hot_score":310},{"id":14,"sido":"29","sigungu":null,"electoral":null,"sido_name":"광주광역시","sigungu_name":null,"lean":"left","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":133,"votes_dn":13,"comments":11,"views":340,"mins_ago":677,"user":"익명13","hot_score":142},{"id":15,"sido":"26","sigungu":null,"electoral":null,"sido_name":"부산광역시","sigungu_name":null,"lean":"left","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":343,"votes_dn":64,"comments":48,"views":1990,"mins_ago":2366,"user":"익명86","hot_score":375},{"id":16,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"center","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":259,"votes_dn":34,"comments":76,"views":1728,"mins_ago":427,"user":"익명89","hot_score":377},{"id":17,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"center","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":276,"votes_dn":35,"comments":36,"views":939,"mins_ago":779,"user":"익명85","hot_score":313},{"id":18,"sido":"48","sigungu":null,"electoral":null,"sido_name":"경상남도","sigungu_name":null,"lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":18,"votes_dn":0,"comments":18,"views":28,"mins_ago":373,"user":"익명23","hot_score":54},{"id":19,"sido":"50","sigungu":null,"electoral":null,"sido_name":"제주특별자치도","sigungu_name":null,"lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":347,"votes_dn":10,"comments":54,"views":348,"mins_ago":449,"user":"익명59","hot_score":445},{"id":20,"sido":"42","sigungu":null,"electoral":null,"sido_name":"강원도","sigungu_name":null,"lean":"center","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":250,"votes_dn":34,"comments":51,"views":407,"mins_ago":2667,"user":"익명42","hot_score":318},{"id":21,"sido":"42","sigungu":null,"electoral":null,"sido_name":"강원도","sigungu_name":null,"lean":"left","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":268,"votes_dn":41,"comments":40,"views":1881,"mins_ago":798,"user":"익명45","hot_score":307},{"id":22,"sido":"44","sigungu":null,"electoral":null,"sido_name":"충청남도","sigungu_name":null,"lean":"right","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":348,"votes_dn":61,"comments":67,"views":816,"mins_ago":2070,"user":"익명61","hot_score":421},{"id":23,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"center","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":382,"votes_dn":71,"comments":39,"views":1904,"mins_ago":328,"user":"익명96","hot_score":389},{"id":24,"sido":"28","sigungu":null,"electoral":null,"sido_name":"인천광역시","sigungu_name":null,"lean":"left","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":70,"votes_dn":11,"comments":6,"views":444,"mins_ago":2416,"user":"익명81","hot_score":71},{"id":25,"sido":"26","sigungu":null,"electoral":null,"sido_name":"부산광역시","sigungu_name":null,"lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":11,"votes_dn":2,"comments":75,"views":255,"mins_ago":2624,"user":"익명26","hot_score":159},{"id":26,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"left","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":334,"votes_dn":43,"comments":7,"views":1398,"mins_ago":2117,"user":"익명89","hot_score":305},{"id":27,"sido":"45","sigungu":null,"electoral":null,"sido_name":"전라북도","sigungu_name":null,"lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":359,"votes_dn":38,"comments":10,"views":746,"mins_ago":1863,"user":"익명89","hot_score":341},{"id":28,"sido":"11","sigungu":null,"electoral":null,"sido_name":"서울특별시","sigungu_name":null,"lean":"left","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":230,"votes_dn":47,"comments":19,"views":1024,"mins_ago":1662,"user":"익명78","hot_score":221},{"id":29,"sido":"27","sigungu":null,"electoral":null,"sido_name":"대구광역시","sigungu_name":null,"lean":"center","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":2,"votes_dn":0,"comments":4,"views":779,"mins_ago":523,"user":"익명91","hot_score":10},{"id":30,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":130,"votes_dn":11,"comments":69,"views":1835,"mins_ago":2742,"user":"익명18","hot_score":257},{"id":31,"sido":"26","sigungu":null,"electoral":null,"sido_name":"부산광역시","sigungu_name":null,"lean":"right","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":373,"votes_dn":49,"comments":65,"views":1473,"mins_ago":298,"user":"익명71","hot_score":454},{"id":32,"sido":"31","sigungu":null,"electoral":null,"sido_name":"울산광역시","sigungu_name":null,"lean":"right","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":290,"votes_dn":41,"comments":41,"views":970,"mins_ago":945,"user":"익명72","hot_score":331},{"id":33,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"right","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":197,"votes_dn":47,"comments":71,"views":1614,"mins_ago":806,"user":"익명99","hot_score":292},{"id":34,"sido":"28","sigungu":null,"electoral":null,"sido_name":"인천광역시","sigungu_name":null,"lean":"left","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":314,"votes_dn":39,"comments":42,"views":705,"mins_ago":2643,"user":"익명34","hot_score":359},{"id":35,"sido":"50","sigungu":null,"electoral":null,"sido_name":"제주특별자치도","sigungu_name":null,"lean":"right","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":180,"votes_dn":41,"comments":27,"views":530,"mins_ago":1457,"user":"익명38","hot_score":193},{"id":36,"sido":"30","sigungu":null,"electoral":null,"sido_name":"대전광역시","sigungu_name":null,"lean":"center","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":343,"votes_dn":18,"comments":33,"views":1088,"mins_ago":1835,"user":"익명48","hot_score":391},{"id":37,"sido":"48","sigungu":null,"electoral":null,"sido_name":"경상남도","sigungu_name":null,"lean":"left","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":356,"votes_dn":12,"comments":61,"views":1213,"mins_ago":2797,"user":"익명45","hot_score":466},{"id":38,"sido":"42","sigungu":null,"electoral":null,"sido_name":"강원도","sigungu_name":null,"lean":"left","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":4,"votes_dn":1,"comments":74,"views":868,"mins_ago":1774,"user":"익명77","hot_score":151},{"id":39,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"right","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":204,"votes_dn":51,"comments":13,"views":1417,"mins_ago":1808,"user":"익명79","hot_score":179},{"id":40,"sido":"44","sigungu":null,"electoral":null,"sido_name":"충청남도","sigungu_name":null,"lean":"center","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":250,"votes_dn":58,"comments":48,"views":1840,"mins_ago":699,"user":"익명59","hot_score":288},{"id":41,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"right","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":384,"votes_dn":33,"comments":3,"views":1990,"mins_ago":2440,"user":"익명46","hot_score":357},{"id":42,"sido":"47","sigungu":null,"electoral":null,"sido_name":"경상북도","sigungu_name":null,"lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":226,"votes_dn":43,"comments":72,"views":51,"mins_ago":2365,"user":"익명59","hot_score":327},{"id":43,"sido":"43","sigungu":null,"electoral":null,"sido_name":"충청북도","sigungu_name":null,"lean":"center","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":336,"votes_dn":34,"comments":76,"views":1771,"mins_ago":455,"user":"익명55","hot_score":454},{"id":44,"sido":"29","sigungu":null,"electoral":null,"sido_name":"광주광역시","sigungu_name":null,"lean":"left","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":228,"votes_dn":44,"comments":18,"views":348,"mins_ago":201,"user":"익명83","hot_score":220},{"id":45,"sido":"42","sigungu":null,"electoral":null,"sido_name":"강원도","sigungu_name":null,"lean":"center","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":182,"votes_dn":5,"comments":32,"views":1592,"mins_ago":565,"user":"익명52","hot_score":241},{"id":46,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":12,"votes_dn":3,"comments":75,"views":216,"mins_ago":2092,"user":"익명65","hot_score":159},{"id":47,"sido":"36","sigungu":null,"electoral":null,"sido_name":"세종특별자치시","sigungu_name":null,"lean":"left","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":368,"votes_dn":81,"comments":75,"views":82,"mins_ago":1983,"user":"익명88","hot_score":437},{"id":48,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"left","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":46,"votes_dn":0,"comments":7,"views":1496,"mins_ago":1473,"user":"익명69","hot_score":60},{"id":49,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"center","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":275,"votes_dn":9,"comments":24,"views":1053,"mins_ago":1490,"user":"익명39","hot_score":314},{"id":50,"sido":"26","sigungu":null,"electoral":null,"sido_name":"부산광역시","sigungu_name":null,"lean":"right","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":339,"votes_dn":73,"comments":21,"views":376,"mins_ago":2299,"user":"익명37","hot_score":308},{"id":51,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"center","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":155,"votes_dn":3,"comments":69,"views":1106,"mins_ago":359,"user":"익명34","hot_score":290},{"id":52,"sido":"44","sigungu":null,"electoral":null,"sido_name":"충청남도","sigungu_name":null,"lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":230,"votes_dn":45,"comments":61,"views":1945,"mins_ago":1009,"user":"익명79","hot_score":307},{"id":53,"sido":"48","sigungu":null,"electoral":null,"sido_name":"경상남도","sigungu_name":null,"lean":"center","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":374,"votes_dn":49,"comments":52,"views":1219,"mins_ago":1897,"user":"익명57","hot_score":429},{"id":54,"sido":"30","sigungu":null,"electoral":null,"sido_name":"대전광역시","sigungu_name":null,"lean":"left","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":327,"votes_dn":63,"comments":29,"views":591,"mins_ago":2083,"user":"익명43","hot_score":322},{"id":55,"sido":"43","sigungu":null,"electoral":null,"sido_name":"충청북도","sigungu_name":null,"lean":"center","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":187,"votes_dn":20,"comments":29,"views":1858,"mins_ago":126,"user":"익명13","hot_score":225},{"id":56,"sido":"36","sigungu":null,"electoral":null,"sido_name":"세종특별자치시","sigungu_name":null,"lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":12,"votes_dn":3,"comments":11,"views":1953,"mins_ago":848,"user":"익명96","hot_score":31},{"id":57,"sido":"46","sigungu":null,"electoral":null,"sido_name":"전라남도","sigungu_name":null,"lean":"left","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":308,"votes_dn":62,"comments":31,"views":634,"mins_ago":1360,"user":"익명24","hot_score":308},{"id":58,"sido":"43","sigungu":null,"electoral":null,"sido_name":"충청북도","sigungu_name":null,"lean":"center","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":304,"votes_dn":73,"comments":63,"views":380,"mins_ago":1643,"user":"익명62","hot_score":357},{"id":59,"sido":"29","sigungu":null,"electoral":null,"sido_name":"광주광역시","sigungu_name":null,"lean":"left","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":15,"votes_dn":0,"comments":6,"views":358,"mins_ago":70,"user":"익명72","hot_score":27},{"id":60,"sido":"41","sigungu":null,"electoral":null,"sido_name":"경기도","sigungu_name":null,"lean":"right","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":239,"votes_dn":32,"comments":11,"views":1708,"mins_ago":1151,"user":"익명79","hot_score":229},{"id":61,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"right","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":239,"votes_dn":2,"comments":8,"views":757,"mins_ago":947,"user":"익명33","hot_score":253},{"id":62,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"left","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":286,"votes_dn":34,"comments":48,"views":612,"mins_ago":236,"user":"익명57","hot_score":348},{"id":63,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"center","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":7,"votes_dn":0,"comments":18,"views":556,"mins_ago":907,"user":"익명62","hot_score":43},{"id":64,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":174,"votes_dn":11,"comments":41,"views":18,"mins_ago":1140,"user":"익명71","hot_score":245},{"id":65,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":16,"votes_dn":0,"comments":50,"views":1445,"mins_ago":894,"user":"익명59","hot_score":116},{"id":66,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"center","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":66,"votes_dn":3,"comments":58,"views":638,"mins_ago":221,"user":"익명53","hot_score":179},{"id":67,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":238,"votes_dn":57,"comments":15,"views":1118,"mins_ago":559,"user":"익명60","hot_score":211},{"id":68,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"left","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":13,"votes_dn":0,"comments":32,"views":1202,"mins_ago":58,"user":"익명49","hot_score":77},{"id":69,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":230,"votes_dn":17,"comments":39,"views":269,"mins_ago":493,"user":"익명77","hot_score":291},{"id":70,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"center","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":44,"votes_dn":11,"comments":21,"views":1240,"mins_ago":1071,"user":"익명65","hot_score":75},{"id":71,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"center","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":203,"votes_dn":1,"comments":12,"views":433,"mins_ago":78,"user":"익명36","hot_score":226},{"id":72,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"center","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":56,"votes_dn":1,"comments":35,"views":319,"mins_ago":1074,"user":"익명85","hot_score":125},{"id":73,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":258,"votes_dn":19,"comments":10,"views":623,"mins_ago":929,"user":"익명27","hot_score":259},{"id":74,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"right","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":32,"votes_dn":1,"comments":0,"views":856,"mins_ago":551,"user":"익명47","hot_score":31},{"id":75,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"right","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":118,"votes_dn":23,"comments":57,"views":936,"mins_ago":35,"user":"익명68","hot_score":209},{"id":76,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"center","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":130,"votes_dn":23,"comments":54,"views":1446,"mins_ago":1391,"user":"익명25","hot_score":215},{"id":77,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"center","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":29,"votes_dn":1,"comments":19,"views":602,"mins_ago":195,"user":"익명65","hot_score":66},{"id":78,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"center","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":162,"votes_dn":4,"comments":58,"views":61,"mins_ago":583,"user":"익명50","hot_score":274},{"id":79,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"center","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":14,"votes_dn":2,"comments":44,"views":1346,"mins_ago":573,"user":"익명20","hot_score":100},{"id":80,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"right","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":9,"votes_dn":1,"comments":32,"views":979,"mins_ago":251,"user":"익명53","hot_score":72},{"id":81,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":31,"votes_dn":6,"comments":53,"views":640,"mins_ago":487,"user":"익명92","hot_score":131},{"id":82,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"right","text":"이 지역 출신 국회의원이 지역 현안에 너무 무관심합니다.","votes_up":82,"votes_dn":18,"comments":14,"views":31,"mins_ago":803,"user":"익명72","hot_score":92},{"id":83,"sido":"11","sigungu":"종로구","electoral":null,"sido_name":"서울특별시","sigungu_name":"종로구","lean":"center","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":206,"votes_dn":23,"comments":39,"views":625,"mins_ago":170,"user":"익명12","hot_score":261},{"id":84,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"right","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":117,"votes_dn":12,"comments":32,"views":591,"mins_ago":21,"user":"익명60","hot_score":169},{"id":85,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"center","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":263,"votes_dn":43,"comments":47,"views":825,"mins_ago":1061,"user":"익명12","hot_score":314},{"id":86,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"right","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":295,"votes_dn":54,"comments":27,"views":394,"mins_ago":19,"user":"익명16","hot_score":295},{"id":87,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"left","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":242,"votes_dn":18,"comments":12,"views":697,"mins_ago":701,"user":"익명38","hot_score":248},{"id":88,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"right","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":91,"votes_dn":10,"comments":8,"views":1133,"mins_ago":758,"user":"익명87","hot_score":97},{"id":89,"sido":"11","sigungu":"종로구","electoral":null,"sido_name":"서울특별시","sigungu_name":"종로구","lean":"left","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":214,"votes_dn":8,"comments":27,"views":783,"mins_ago":827,"user":"익명15","hot_score":260},{"id":90,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"left","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":257,"votes_dn":54,"comments":8,"views":1444,"mins_ago":436,"user":"익명81","hot_score":219},{"id":91,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"left","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":205,"votes_dn":7,"comments":41,"views":323,"mins_ago":1041,"user":"익명98","hot_score":280},{"id":92,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"이 지역 출신 국회의원이 지역 현안에 너무 무관심합니다.","votes_up":120,"votes_dn":12,"comments":1,"views":1319,"mins_ago":108,"user":"익명94","hot_score":110},{"id":93,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"center","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":264,"votes_dn":62,"comments":30,"views":231,"mins_ago":80,"user":"익명49","hot_score":262},{"id":94,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"center","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":140,"votes_dn":1,"comments":3,"views":205,"mins_ago":1168,"user":"익명32","hot_score":145},{"id":95,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"left","text":"이 지역 출신 국회의원이 지역 현안에 너무 무관심합니다.","votes_up":186,"votes_dn":19,"comments":5,"views":1476,"mins_ago":785,"user":"익명11","hot_score":177},{"id":96,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"right","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":116,"votes_dn":4,"comments":4,"views":231,"mins_ago":983,"user":"익명85","hot_score":120},{"id":97,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"center","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":128,"votes_dn":26,"comments":60,"views":1024,"mins_ago":653,"user":"익명99","hot_score":222},{"id":98,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"right","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":232,"votes_dn":28,"comments":41,"views":237,"mins_ago":297,"user":"익명15","hot_score":286},{"id":99,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"left","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":3,"votes_dn":0,"comments":20,"views":956,"mins_ago":843,"user":"익명79","hot_score":43},{"id":100,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"left","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":292,"votes_dn":30,"comments":19,"views":1387,"mins_ago":903,"user":"익명65","hot_score":300},{"id":101,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":269,"votes_dn":4,"comments":47,"views":1126,"mins_ago":312,"user":"익명33","hot_score":359},{"id":102,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"right","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":255,"votes_dn":27,"comments":36,"views":170,"mins_ago":325,"user":"익명54","hot_score":300},{"id":103,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"left","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":167,"votes_dn":38,"comments":19,"views":116,"mins_ago":870,"user":"익명59","hot_score":167},{"id":104,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"center","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":91,"votes_dn":3,"comments":43,"views":1210,"mins_ago":1164,"user":"익명39","hot_score":174},{"id":105,"sido":"11","sigungu":"종로구","electoral":null,"sido_name":"서울특별시","sigungu_name":"종로구","lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":191,"votes_dn":27,"comments":50,"views":397,"mins_ago":677,"user":"익명57","hot_score":264},{"id":106,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"right","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":28,"votes_dn":0,"comments":39,"views":7,"mins_ago":95,"user":"익명80","hot_score":106},{"id":107,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":27,"votes_dn":6,"comments":31,"views":336,"mins_ago":785,"user":"익명48","hot_score":83},{"id":108,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":134,"votes_dn":31,"comments":4,"views":532,"mins_ago":982,"user":"익명81","hot_score":111},{"id":109,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":19,"votes_dn":3,"comments":24,"views":1057,"mins_ago":1356,"user":"익명36","hot_score":64},{"id":110,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"left","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":236,"votes_dn":11,"comments":56,"views":970,"mins_ago":678,"user":"익명45","hot_score":337},{"id":111,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":224,"votes_dn":25,"comments":31,"views":1088,"mins_ago":905,"user":"익명95","hot_score":261},{"id":112,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"right","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":280,"votes_dn":22,"comments":27,"views":776,"mins_ago":1259,"user":"익명92","hot_score":312},{"id":113,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"right","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":242,"votes_dn":20,"comments":14,"views":575,"mins_ago":924,"user":"익명72","hot_score":250},{"id":114,"sido":"41","sigungu":"성남시","electoral":null,"sido_name":"경기도","sigungu_name":"성남시","lean":"center","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":11,"votes_dn":0,"comments":49,"views":1287,"mins_ago":590,"user":"익명60","hot_score":109},{"id":115,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"right","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":126,"votes_dn":27,"comments":36,"views":1307,"mins_ago":1075,"user":"익명21","hot_score":171},{"id":116,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"left","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":7,"votes_dn":0,"comments":45,"views":268,"mins_ago":41,"user":"익명52","hot_score":97},{"id":117,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"center","text":"공원 녹지 공간이 너무 부족합니다. 도시 개발 시 반드시 반영해야 합니다.","votes_up":217,"votes_dn":24,"comments":21,"views":341,"mins_ago":1271,"user":"익명86","hot_score":235},{"id":118,"sido":"11","sigungu":"강남구","electoral":null,"sido_name":"서울특별시","sigungu_name":"강남구","lean":"center","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":230,"votes_dn":53,"comments":25,"views":16,"mins_ago":1331,"user":"익명53","hot_score":227},{"id":119,"sido":"11","sigungu":"종로구","electoral":null,"sido_name":"서울특별시","sigungu_name":"종로구","lean":"right","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":243,"votes_dn":60,"comments":35,"views":602,"mins_ago":531,"user":"익명55","hot_score":253},{"id":120,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"center","text":"의료 접근성이 너무 낮습니다. 공공병원 확충을 요구합니다.","votes_up":218,"votes_dn":53,"comments":4,"views":118,"mins_ago":413,"user":"익명63","hot_score":173},{"id":121,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"right","text":"물가 상승이 너무 심합니다. 지역 차원의 대책이 필요합니다.","votes_up":50,"votes_dn":12,"comments":48,"views":1044,"mins_ago":878,"user":"익명14","hot_score":134},{"id":122,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"left","text":"학교 시설이 너무 낙후되었습니다. 교육 예산을 늘려야 합니다.","votes_up":24,"votes_dn":2,"comments":29,"views":334,"mins_ago":163,"user":"익명79","hot_score":80},{"id":123,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"center","text":"반도체 산업 육성은 좋지만 지역 주민에게 실질적인 혜택이 돌아와야 합니다.","votes_up":4,"votes_dn":0,"comments":43,"views":1247,"mins_ago":568,"user":"익명54","hot_score":90},{"id":124,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"center","text":"지역 청년 일자리 창출이 시급합니다. 기업 유치 정책이 필요합니다.","votes_up":181,"votes_dn":24,"comments":60,"views":1075,"mins_ago":292,"user":"익명51","hot_score":277},{"id":125,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":223,"votes_dn":37,"comments":43,"views":1010,"mins_ago":148,"user":"익명63","hot_score":272},{"id":126,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":151,"votes_dn":32,"comments":18,"views":1136,"mins_ago":1029,"user":"익명23","hot_score":155},{"id":127,"sido":"26","sigungu":"해운대구","electoral":null,"sido_name":"부산광역시","sigungu_name":"해운대구","lean":"left","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":120,"votes_dn":0,"comments":32,"views":258,"mins_ago":427,"user":"익명96","hot_score":184},{"id":128,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"center","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":281,"votes_dn":68,"comments":57,"views":605,"mins_ago":918,"user":"익명59","hot_score":327},{"id":129,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"center","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":232,"votes_dn":21,"comments":37,"views":468,"mins_ago":590,"user":"익명46","hot_score":285},{"id":130,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"right","text":"복지관 예산 삭감은 절대 안 됩니다. 어르신들이 갈 곳이 없어집니다.","votes_up":62,"votes_dn":4,"comments":9,"views":1282,"mins_ago":871,"user":"익명54","hot_score":76},{"id":131,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"right","text":"환경오염 문제가 심각한데 관련 기관이 너무 소극적입니다.","votes_up":255,"votes_dn":28,"comments":34,"views":837,"mins_ago":309,"user":"익명93","hot_score":295},{"id":132,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"right","text":"재개발 계획이 기존 주민 상권을 전혀 고려하지 않고 있습니다. 공청회를 먼저 해야 합니다.","votes_up":160,"votes_dn":5,"comments":39,"views":685,"mins_ago":1261,"user":"익명94","hot_score":233},{"id":133,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"left","text":"이 지역의 교통 문제가 심각합니다. 대중교통 확충이 시급합니다.","votes_up":22,"votes_dn":1,"comments":36,"views":940,"mins_ago":415,"user":"익명27","hot_score":93},{"id":134,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"right","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":82,"votes_dn":2,"comments":41,"views":5,"mins_ago":1340,"user":"익명50","hot_score":162},{"id":135,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"center","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":132,"votes_dn":14,"comments":56,"views":1240,"mins_ago":57,"user":"익명41","hot_score":230},{"id":136,"sido":"11","sigungu":"마포구","electoral":null,"sido_name":"서울특별시","sigungu_name":"마포구","lean":"center","text":"인프라 노후화 해결 없이는 지역 경쟁력이 없습니다. 재개발을 서둘러야 합니다.","votes_up":165,"votes_dn":14,"comments":40,"views":1068,"mins_ago":1341,"user":"익명99","hot_score":231},{"id":137,"sido":"11","sigungu":"송파구","electoral":null,"sido_name":"서울특별시","sigungu_name":"송파구","lean":"left","text":"지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.","votes_up":89,"votes_dn":7,"comments":8,"views":1154,"mins_ago":117,"user":"익명30","hot_score":98},{"id":138,"sido":"27","sigungu":"수성구","electoral":null,"sido_name":"대구광역시","sigungu_name":"수성구","lean":"right","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":98,"votes_dn":17,"comments":16,"views":734,"mins_ago":1328,"user":"익명24","hot_score":113},{"id":139,"sido":"41","sigungu":"수원시","electoral":null,"sido_name":"경기도","sigungu_name":"수원시","lean":"center","text":"지역 의회가 주민 목소리를 제대로 듣지 않고 있습니다.","votes_up":289,"votes_dn":9,"comments":48,"views":200,"mins_ago":608,"user":"익명11","hot_score":376},{"id":140,"sido":"11","sigungu":"성동구","electoral":null,"sido_name":"서울특별시","sigungu_name":"성동구","lean":"left","text":"주차 공간이 턱없이 부족합니다. 공영주차장 확충이 필요합니다.","votes_up":191,"votes_dn":25,"comments":53,"views":573,"mins_ago":877,"user":"익명94","hot_score":272}];
+
+// ★ 가상의 내 위치 (작성 권한 체크용)
+var MY_LOC = { sido: '11', sigungu: '동대문구' };
+
+var _panelExpanded = false;
+function togglePanelExpand() {
+  _panelExpanded = !_panelExpanded;
+  var mw = document.querySelector('.map-wrap');
+  var sp = document.getElementById('side-panel');
+  var btn = document.getElementById('map-expand-btn');
+  if (_panelExpanded) {
+    mw.classList.add('map-narrow');
+    sp.classList.add('panel-wide');
+    btn.textContent = '⇔';
+    btn.title = '지도 넓히기';
+  } else {
+    mw.classList.remove('map-narrow');
+    sp.classList.remove('panel-wide');
+    btn.textContent = '⇔';
+    btn.title = '패널 확장';
+  }
+  // D3 map resize
+  setTimeout(function(){
+    var mc = document.getElementById('map-container');
+    if (window._mapResizeFn) window._mapResizeFn();
+  }, 320);
+}
+
+// Mobile: show tap button
+if (window.innerWidth < 768) {
+  document.getElementById('mobile-map-tap').style.display = 'block';
+}
+window.addEventListener('resize', function(){
+  if (window.innerWidth < 768) {
+    document.getElementById('mobile-map-tap').style.display = 'block';
+  } else {
+    document.getElementById('mobile-map-tap').style.display = 'none';
+  }
+});
+
+(function(){
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// 상수 & 색상
+// ══════════════════════════════════════════════════════
+var FILL={
+  left:{1:'#90B8E8',2:'#3B7DD8',3:'#1A4DA0'},
+  right:{1:'#F0A0A0',2:'#D84040',3:'#9A1010'},
+  center:'#9BA3B8',empty:'#D8DCE8'
+};
+var IL={1:'약세',2:'우세',3:'압도'};
+var LEAN_LABEL={left:'진보',center:'중도',right:'보수'};
+var LEFT_HEAVY=['11','29','45'];
+var RIGHT_HEAVY=['27','47','48','26'];
+var ZOOM_THRESHOLD=3.5;
+var SUFFIXES=['갑','을','병','정'];
+var SIDO_NAMES={
+  '11':'서울특별시','26':'부산광역시','27':'대구광역시','28':'인천광역시',
+  '29':'광주광역시','30':'대전광역시','31':'울산광역시','36':'세종특별자치시',
+  '41':'경기도','42':'강원도','43':'충청북도','44':'충청남도',
+  '45':'전라북도','46':'전라남도','47':'경상북도','48':'경상남도','50':'제주특별자치도'
+};
+
+// ══════════════════════════════════════════════════════
+// 상태
+// ══════════════════════════════════════════════════════
+var state = {
+  depth: 0,
+  selectedSido: null,
+  selectedSidoName: null,
+  selectedSigungu: null,
+  selectedElectoral: null,
+  activeTab: 'opinions',
+  opinionFilter: 'all',
+  sortMode: 'hot',
+  searchQuery: '',
+  isMobile: window.innerWidth < 768,
+};
+
+// ══════════════════════════════════════════════════════
+// 통계 데이터 생성
+// ══════════════════════════════════════════════════════
+function seededRand(s){var x=Math.sin(s)*10000;return x-Math.floor(x);}
+function generateBaseData(code,idx){
+  var s=idx*7+(parseInt(code)||0)%100;
+  var pfx=code.substring(0,2);
+  var l,r;
+  if(LEFT_HEAVY.indexOf(pfx)>=0){l=Math.floor(seededRand(s)*25)+40;r=Math.floor(seededRand(s+1)*15)+10;}
+  else if(RIGHT_HEAVY.indexOf(pfx)>=0){l=Math.floor(seededRand(s)*15)+10;r=Math.floor(seededRand(s+1)*25)+45;}
+  else{l=Math.floor(seededRand(s)*22)+28;r=Math.floor(seededRand(s+1)*22)+28;}
+  var c=Math.max(5,100-l-r),tot=l+r+c;
+  var lp=Math.round(l/tot*100),rp=Math.round(r/tot*100),cp=100-lp-rp;
+  var mx=Math.max(l,r,c);
+  var dom,inten;
+  if(c===mx){dom='center';inten=0;}
+  else if(l===mx){dom='left';inten=l-Math.max(r,c)>=25?3:l-Math.max(r,c)>=12?2:1;}
+  else{dom='right';inten=r-Math.max(l,c)>=25?3:r-Math.max(l,c)>=12?2:1;}
+  return{lp:lp,rp:rp,cp:cp,dom:dom,inten:inten,total:Math.floor(seededRand(s+5)*300)+20};
+}
+function aggregateSidoData(sidoCode,sigunguStats){
+  var tL=0,tR=0,tC=0,tAll=0;
+  Object.keys(sigunguStats).forEach(function(code){
+    if(code.substring(0,2)===sidoCode){
+      var d=sigunguStats[code],t=d.total||20;
+      tL+=Math.round(d.lp*t/100);tR+=Math.round(d.rp*t/100);tC+=Math.round(d.cp*t/100);tAll+=t;
+    }
+  });
+  if(tAll===0)return{lp:33,rp:33,cp:34,dom:'center',inten:0,total:0};
+  var lp=Math.round(tL/tAll*100),rp=Math.round(tR/tAll*100),cp=100-lp-rp;
+  var mx=Math.max(lp,rp,cp);
+  var dom,inten;
+  if(cp===mx){dom='center';inten=0;}
+  else if(lp===mx){dom='left';inten=lp-Math.max(rp,cp)>=25?3:lp-Math.max(rp,cp)>=12?2:1;}
+  else{dom='right';inten=rp-Math.max(lp,cp)>=25?3:rp-Math.max(lp,cp)>=12?2:1;}
+  return{lp:lp,rp:rp,cp:cp,dom:dom,inten:inten,total:tAll};
+}
+function getFill(s){
+  if(!s)return FILL.empty;
+  if(s.dom==='center')return FILL.center;
+  return FILL[s.dom][s.inten]||FILL.empty;
+}
+
+// ══════════════════════════════════════════════════════
+// Reddit-style Hot Score
+// ══════════════════════════════════════════════════════
+function hotScore(p){
+  var score=p.votes_up-p.votes_dn;
+  var order=Math.log(Math.max(Math.abs(score),1))/Math.LN10;
+  var sign=score>0?1:score<0?-1:0;
+  var seconds=p.mins_ago*60;
+  return sign*order+seconds/45000;
+}
+function sortPosts(posts,mode){
+  var arr=posts.slice();
+  if(mode==='hot') arr.sort(function(a,b){return hotScore(b)-hotScore(a);});
+  else if(mode==='new') arr.sort(function(a,b){return a.mins_ago-b.mins_ago;});
+  else if(mode==='top') arr.sort(function(a,b){return (b.votes_up-b.votes_dn)-(a.votes_up-a.votes_dn);});
+  else if(mode==='comments') arr.sort(function(a,b){return b.comments-a.comments;});
+  return arr;
+}
+
+// ══════════════════════════════════════════════════════
+// 권한 체크 로직
+// ══════════════════════════════════════════════════════
+function checkWritePermission() {
+  if (state.depth === 0) return true;
+  if (state.depth >= 1 && state.selectedSido !== MY_LOC.sido) return false;
+  if (state.depth === 2 && state.selectedSigungu !== MY_LOC.sigungu) return false;
+  return true;
+}
+
+function updateWritePermission() {
+  var isAllowed = checkWritePermission();
+  var taDesktop = document.getElementById('write-textarea');
+  var btnDesktop = document.getElementById('write-submit-btn');
+  var taMobile = document.getElementById('m-write-textarea');
+  var btnMobile = document.getElementById('m-write-submit-btn');
+
+  if (isAllowed) {
+    taDesktop.disabled = false;
+    btnDesktop.disabled = false;
+    btnDesktop.textContent = '게시';
+    
+    taMobile.disabled = false;
+    btnMobile.disabled = false;
+    btnMobile.textContent = '게시';
+
+    if (state.depth === 0) {
+      taDesktop.placeholder = '전국(중앙정부) 현안에 대한 의견을 작성해 주세요...';
+      taMobile.placeholder = '전국(중앙정부) 의견을 작성해 주세요...';
+    } else {
+      taDesktop.placeholder = '이 지역 현안에 대한 의견을 작성해 주세요…';
+      taMobile.placeholder = '의견을 작성해 주세요…';
+    }
+  } else {
+    taDesktop.disabled = true;
+    btnDesktop.disabled = true;
+    btnDesktop.textContent = '불가';
+    taDesktop.placeholder = '현재 위치한 지역(' + SIDO_NAMES[MY_LOC.sido] + ' ' + MY_LOC.sigungu + ') 또는 전국에서만 작성할 수 있습니다.';
+    taDesktop.value = '';
+    
+    taMobile.disabled = true;
+    btnMobile.disabled = true;
+    btnMobile.textContent = '불가';
+    taMobile.placeholder = '현재 위치한 지역 또는 전국에서만 작성할 수 있습니다.';
+    taMobile.value = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// D3 Map Setup & Load Data (URL Fetch)
+// ══════════════════════════════════════════════════════
+var mc=document.getElementById('map-container');
+var W=mc.clientWidth,H=mc.clientHeight;
+var svg=d3.select('#map-svg');
+var tipEl=d3.select('#map-tooltip');
+var svgG=svg.append('g');
+var gSido=svgG.append('g').attr('id','layer-sido');
+var gSigungu=svgG.append('g').attr('id','layer-sigungu');
+var gSel=svgG.append('g').attr('id','layer-sel').style('pointer-events','none');
+
+var proj=d3.geoMercator();
+var pg=d3.geoPath().projection(proj);
+var sigunguStats={}, sidoStats={}, sigunguFeatures=[], sidoFeatures=[], selectedFeat=null;
+
+var zB=d3.zoom().scaleExtent([0.5,20]).on('zoom',function(event){
+  var t=event.transform,k=t.k;
+  svgG.attr('transform',t);
+  gSido.selectAll('.district-sido').attr('stroke-width',1.5/k);
+  gSigungu.selectAll('.district').attr('stroke-width',0.8/k);
+  gSel.selectAll('.sel-ring').attr('stroke-width',2.5/k);
+  
+  // 독도 마커 크기 역비례
+  var gDok=svgG.select('#layer-dokdo');
+  if(!gDok.empty()){gDok.select('circle').attr('r',4/k).attr('stroke-width',1.2/k);gDok.select('text').attr('font-size',7/k+'px');}
+});
+svg.call(zB);
+
+// 외부 URL에서 TopoJSON 데이터 가져오기
+const URL_SIDO = "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_topo_simple.json";
+const URL_SIGUNGU = "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_municipalities_topo_simple.json";
+
+Promise.all([d3.json(URL_SIDO), d3.json(URL_SIGUNGU)]).then(function(data) {
+  try {
+    var sidoTopo = data[0];
+    var sigunguTopo = data[1];
+
+    sidoFeatures = topojson.feature(sidoTopo, sidoTopo.objects[Object.keys(sidoTopo.objects)[0]]).features;
+    sigunguFeatures = topojson.feature(sigunguTopo, sigunguTopo.objects[Object.keys(sigunguTopo.objects)[0]]).features;
+
+    proj.fitSize([W, H], {type: "FeatureCollection", features: sidoFeatures});
+
+    // Generate Stats
+    sigunguFeatures.forEach(function(f, i){
+        var code = (f.properties.code || f.properties.id || String(i)).toString();
+        sigunguStats[code] = generateBaseData(code, i);
+    });
+
+    sidoFeatures.forEach(function(f){
+        var pfx = (f.properties.code || f.properties.id || '').toString().substring(0, 2);
+        if(pfx) sidoStats[pfx] = aggregateSidoData(pfx, sigunguStats);
+    });
+
+    // 1단계: 시도 렌더링
+    gSido.selectAll('.district-sido').data(sidoFeatures).enter()
+      .append('path').attr('class','district-sido')
+      .attr('fill', function(d) {
+          var pfx = (d.properties.code || '').substring(0, 2);
+          return getFill(sidoStats[pfx]);
+      })
+      .attr('data-sido', function(d) { return (d.properties.code || '').substring(0, 2); })
+      .attr('d', pg)
+      .on('mouseover', function(event, d){ onOver(event, d, 'sido'); })
+      .on('mousemove', onMove)
+      .on('mouseout', function(){ tipEl.style('opacity','0'); })
+      .on('click', function(event, d){
+          var pfx = (d.properties.code || '').substring(0, 2);
+          onClickSido(event, d, pfx);
+      });
+
+    // 2단계: 시군구 렌더링
+    gSigungu.selectAll('.district').data(sigunguFeatures).enter()
+      .append('path').attr('class','district')
+      .attr('fill', function(d){ var code = (d.properties.code||d.properties.id||'0').toString(); return getFill(sigunguStats[code]); })
+      .attr('d', pg)
+      .style('display', 'none') // 초기에는 숨김 (드릴다운 시 표시됨)
+      .on('mouseover', function(event, d){ onOver(event, d, 'sigungu'); })
+      .on('mousemove', onMove)
+      .on('mouseout', function(){ tipEl.style('opacity','0'); })
+      .on('click', function(event, d){ onClickSigungu(event, d); });
+
+    // 독도 마커
+    var dokdoPt=proj([131.865, 37.242]);
+    var gDokdo=svgG.append('g').attr('id','layer-dokdo').style('pointer-events','all');
+    gDokdo.append('circle').attr('cx',dokdoPt[0]).attr('cy',dokdoPt[1])
+      .attr('r',4).attr('fill','#2C5FD4').attr('stroke','#fff').attr('stroke-width',1.2)
+      .style('cursor','pointer')
+      .on('mouseover',function(event){
+        var r=mc.getBoundingClientRect();
+        var x=event.clientX-r.left+14,y=event.clientY-r.top-10;
+        tipEl.style('opacity','1').html(
+          '<div style="font-weight:700;color:#1A1F36;margin-bottom:3px;">독도</div>'+
+          '<div style="font-size:10px;color:#5A6280;">경상북도 울릉군 울릉읍<br>독도리 산1-96번지</div>'+
+          '<div style="font-size:10px;color:#2C5FD4;margin-top:4px;font-weight:600;">대한민국 영토 🇰🇷</div>'
+        );
+        tipEl.style('left',x+'px').style('top',y+'px');
+      })
+      .on('mouseout',function(){tipEl.style('opacity','0');});
+    gDokdo.append('text').attr('x',dokdoPt[0]+7).attr('y',dokdoPt[1]+4)
+      .attr('font-size','7px').attr('fill','#2C5FD4').attr('font-weight','700')
+      .style('pointer-events','none').text('독도');
+
+    document.getElementById('map-loader').style.display='none';
+    updateMapLayers();
+    updateWritePermission(); // 초기 로드 권한 체크
+
+  } catch(e) {
+    document.getElementById('map-loader').innerHTML=
+      '<p style="color:#D84040;font-weight:700;padding:20px;text-align:center;">렌더링 오류<br><small>'+e.message+'</small></p>';
+    console.error(e);
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// Layer Toggle
+// ══════════════════════════════════════════════════════
+function updateMapLayers() {
+  if (state.depth === 0) {
+    // 전국 단위: 시도 모두 표시, 시군구 숨김
+    gSido.selectAll('.district-sido')
+      .style('opacity', 1)
+      .style('stroke', null)
+      .style('pointer-events', 'auto');
+    
+    gSigungu.selectAll('.district').style('display', 'none');
+    
+    document.getElementById('ztab-sido').classList.add('active');
+    document.getElementById('ztab-sigungu').classList.remove('active');
+    document.getElementById('level-label').textContent = '광역시도 단위 — 클릭하여 시군구 보기';
+  } else {
+    // 드릴다운: 선택된 시도는 외곽선과 이벤트만 끄고 채우기 100% 유지 (Sliver 방지)
+    // 나머지 시도는 투명도를 낮춤
+    gSido.selectAll('.district-sido')
+      .style('opacity', function(d) {
+         var pfx = (d.properties.code || '').substring(0, 2);
+         return pfx === state.selectedSido ? 1 : 0.3; 
+      })
+      .style('stroke', function(d) {
+         var pfx = (d.properties.code || '').substring(0, 2);
+         return pfx === state.selectedSido ? 'none' : null;
+      })
+      .style('pointer-events', function(d) {
+         var pfx = (d.properties.code || '').substring(0, 2);
+         return pfx === state.selectedSido ? 'none' : 'auto'; // 다른 시도는 클릭해서 점프 가능
+      });
+      
+    // 선택된 시도의 시군구만 표시
+    gSigungu.selectAll('.district')
+      .style('display', function(d) {
+         var pfx = (d.properties.code||d.properties.id||'').toString().substring(0, 2);
+         return pfx === state.selectedSido ? null : 'none';
+      });
+
+    document.getElementById('ztab-sido').classList.remove('active');
+    document.getElementById('ztab-sigungu').classList.add('active');
+    document.getElementById('level-label').textContent = '시군구 단위 — 클릭하여 지역 보기';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Tooltip
+// ══════════════════════════════════════════════════════
+function onOver(event,d,level){
+  var code=(d.properties.code||d.properties.id||'0').toString();
+  var name=d.properties.name||'—';
+  var s=level==='sido'?sidoStats[code.substring(0,2)]:sigunguStats[code];
+  var h='<div style="font-weight:700;color:#1A1F36;margin-bottom:4px;">'+name+'</div>';
+  if(s){
+    var cl=s.dom==='left'?'#3B7DD8':s.dom==='right'?'#D84040':'#9BA3B8';
+    var lbl=s.dom==='center'?'중도':(s.dom==='left'?'진보 ':'보수 ')+(IL[s.inten]||'');
+    h+='<div style="margin-bottom:6px;"><span style="background:'+cl+'18;color:'+cl+';font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">'+lbl+'</span></div>';
+    h+='<div style="height:5px;border-radius:3px;overflow:hidden;display:flex;background:#EEF0F5;margin-bottom:4px;">'
+      +'<div style="width:'+s.lp+'%;background:#3B7DD8;border-radius:3px 0 0 3px;"></div>'
+      +'<div style="width:'+s.cp+'%;background:#9BA3B8;"></div>'
+      +'<div style="width:'+s.rp+'%;background:#D84040;border-radius:0 3px 3px 0;"></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px;">'
+      +'<span style="color:#3B7DD8">'+s.lp+'%</span><span style="color:#6B7280">'+s.cp+'%</span><span style="color:#D84040">'+s.rp+'%</span></div>';
+  }
+  // 뉴스 3개
+  var pfx=code.substring(0,2);
+  var news=(NEWS_DATA[pfx]||NEWS_DATA['default']||[]).slice(0,3);
+  if(news.length){
+    h+='<div style="border-top:1px solid #EEF0F5;padding-top:6px;margin-top:2px;">';
+    h+='<div style="font-size:9px;font-weight:800;color:#9BA3B8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">주요 뉴스</div>';
+    news.forEach(function(n){
+      h+='<div style="display:flex;gap:5px;margin-bottom:3px;font-size:10px;color:#5A6280;line-height:1.4;">'
+        +'<span style="flex-shrink:0;font-size:8px;font-weight:800;padding:1px 5px;border-radius:8px;background:#EEF1FA;color:#2C5FD4;margin-top:1px;">'+n.tag+'</span>'
+        +'<span>'+n.title+'</span></div>';
+    });
+    h+='</div>';
+  }
+  h+='<div style="font-size:10px;color:#2C5FD4;font-weight:600;margin-top:5px;">'+function(){if(level==='sido'){return(state.depth===1&&state.selectedSido===code.substring(0,2))?'다시 클릭 → 시군구 ▶':'클릭 → 시도 의견';}return'클릭 → 지역 의견 확인';}()+'</div>';
+  tipEl.style('opacity','1').html(h);
+  d3.select(event.currentTarget).raise();
+  gSel.raise();
+}
+function onMove(event){
+  var r=mc.getBoundingClientRect();
+  var x=event.clientX-r.left;
+  var y=event.clientY-r.top;
+  tipEl.style('left',x+'px').style('top',y+'px');
+}
+
+// ══════════════════════════════════════════════════════
+// Click Handlers
+// ══════════════════════════════════════════════════════
+function onClickSido(event, d, sidoPfx) {
+  state.depth = 1;
+  state.selectedSido = sidoPfx;
+  state.selectedSidoName = SIDO_NAMES[sidoPfx] || sidoPfx;
+  state.selectedSigungu = null;
+  state.selectedElectoral = null;
+  selectedFeat = null;
+  gSel.selectAll('.sel-ring').remove();
+
+  updateMapLayers();
+  
+  var feats = [];
+  gSido.selectAll('[data-sido="'+sidoPfx+'"]').each(function(dd){feats.push(dd);});
+  if(feats.length){
+    var b = pg.bounds({type:'FeatureCollection', features:feats});
+    var dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
+    var cx = (b[0][0] + b[1][0]) / 2, cy = (b[0][1] + b[1][1]) / 2;
+    var sc = Math.min(20, 0.78 / Math.max(dx / W, dy / H));
+    svg.transition().duration(800).ease(d3.easeCubicInOut)
+      .call(zB.transform, d3.zoomIdentity.translate(W/2 - sc * cx, H/2 - sc * cy).scale(sc));
+  }
+  
+  if(state.isMobile) openMobilePanel();
+  renderPanel();
+}
+
+function onClickSigungu(event,d){
+  var code=(d.properties.code||d.properties.id||'0').toString();
+  var name=d.properties.name||'—';
+  state.depth=2;
+  if(selectedFeat===d){selectedFeat=null;gSel.selectAll('.sel-ring').remove();return;}
+  selectedFeat=d;
+  state.selectedSido=code.substring(0,2);
+  state.selectedSidoName=SIDO_NAMES[state.selectedSido]||state.selectedSido;
+  state.selectedSigungu=name;
+  state.selectedElectoral=null;
+  gSel.selectAll('.sel-ring').remove();
+  var k=d3.zoomTransform(svg.node()).k;
+  gSel.append('path').datum(d).attr('class','sel-ring')
+    .attr('stroke','#1A1F36').attr('stroke-width',2.5/k)
+    .attr('stroke-linejoin','round').attr('d',pg).style('pointer-events','none');
+  gSel.raise();
+  var b=pg.bounds(d);
+  var dx=b[1][0]-b[0][0],dy=b[1][1]-b[0][1];
+  var cx=(b[0][0]+b[1][0])/2,cy=(b[0][1]+b[1][1])/2;
+  var sc=Math.min(20,0.85/Math.max(dx/W,dy/H));
+  svg.transition().duration(750).ease(d3.easeCubicInOut)
+    .call(zB.transform,d3.zoomIdentity.translate(W/2-sc*cx,H/2-sc*cy).scale(sc));
+  if(state.isMobile) openMobilePanel();
+  renderPanel();
+}
+
+// ══════════════════════════════════════════════════════
+// Panel Render
+// ══════════════════════════════════════════════════════
+function getLocationLabel(){
+  if(state.depth === 0) return '전국 (작성위치: ' + SIDO_NAMES[MY_LOC.sido] + ')';
+  if(!state.selectedSido) return null;
+  var sido=state.selectedSidoName;
+  if(!state.selectedSigungu) return sido;
+  var sg=state.selectedSigungu;
+  return sido+' › '+sg;
+}
+
+function getBreadcrumbHTML(){
+  var h='<span class="bc-link" onclick="window.goLevel(\'sido\')" style="cursor:pointer;color:#9BA3B8;">🏙️ 전국 (중앙정부)</span>';
+  if(state.selectedSido){
+    h+=' <span style="color:#DDE1EC">›</span> ';
+    if(state.selectedSigungu){
+      h+='<span class="bc-link" style="cursor:pointer;color:#9BA3B8;" onclick="window.backToSido()">'+state.selectedSidoName+'</span>';
+      h+=' <span style="color:#DDE1EC">›</span> <span style="color:#1A1F36;font-weight:700;">'+state.selectedSigungu+'</span>';
+    } else {
+      h+='<span style="color:#1A1F36;font-weight:700;">'+state.selectedSidoName+'</span>';
+      if(state.depth===1)h+=' <span style="font-size:10px;color:#9BA3B8;">한 번 더 클릭 → 시군구</span>';
+    }
+  }
+  return h;
+}
+
+function getFilteredPosts(){
+  var sido=state.selectedSido;
+  var sg=state.selectedSigungu;
+  var filtered=ALL_POSTS.filter(function(p){
+    if (state.depth === 0) return true; // 전국 뷰는 전체 노출
+
+    if(sg){
+      if(p.sido!==sido||p.sigungu_name!==sg) return false;
+    } else if(sido){
+      if(p.sido!==sido) return false;
+    } else {
+      return false;
+    }
+    if(state.opinionFilter!=='all'&&p.lean!==state.opinionFilter) return false;
+    if(state.searchQuery&&p.text.indexOf(state.searchQuery)<0) return false;
+    return true;
+  });
+  return sortPosts(filtered,state.sortMode);
+}
+
+function getNewsForRegion(){
+  if(!state.selectedSido) return NEWS_DATA['default']||[];
+  var news=NEWS_DATA[state.selectedSido]||NEWS_DATA['default']||[];
+  return news.slice(0,5);
+}
+
+function fmtTime(mins){
+  if(mins<60) return mins+'분 전';
+  if(mins<1440) return Math.floor(mins/60)+'시간 전';
+  return Math.floor(mins/1440)+'일 전';
+}
+
+function renderPanel(){
+  document.getElementById('breadcrumb').innerHTML=getBreadcrumbHTML();
+  var s=null;
+  if (state.depth === 0) {
+    // 전국 단위 통계 합산
+    var tL=0,tR=0,tC=0,tAll=0;
+    Object.keys(sidoStats).forEach(function(code){
+      var d=sidoStats[code],t=d.total||20;
+      tL+=Math.round(d.lp*t/100);tR+=Math.round(d.rp*t/100);tC+=Math.round(d.cp*t/100);tAll+=t;
+    });
+    if(tAll>0){
+        var lp=Math.round(tL/tAll*100),rp=Math.round(tR/tAll*100),cp=100-lp-rp;
+        s = {lp:lp, rp:rp, cp:cp, dom: 'center'}; 
+    }
+    document.getElementById('panel-title').textContent='전국 (중앙정부)';
+    document.getElementById('panel-subtitle').textContent='지도에서 광역시도를 클릭하여 지역 여론을 확인하세요.';
+  } else if(state.selectedSigungu){
+    for(var i=0;i<sigunguFeatures.length;i++){
+      var f=sigunguFeatures[i];
+      if((f.properties.name||'')==state.selectedSigungu){
+        var code2=(f.properties.code||f.properties.id||'0').toString();
+        s=sigunguStats[code2];break;
+      }
+    }
+  } else if(state.selectedSido){
+    s=sidoStats[state.selectedSido];
+  }
+  if(s){
+    document.getElementById('stat-bar-l').style.cssText='width:'+s.lp+'%;background:#3B7DD8;border-radius:4px 0 0 4px;';
+    document.getElementById('stat-bar-c').style.cssText='width:'+s.cp+'%;background:#9BA3B8;';
+    document.getElementById('stat-bar-r').style.cssText='width:'+s.rp+'%;background:#D84040;border-radius:0 4px 4px 0;';
+    document.getElementById('stat-l').textContent=s.lp+'%';
+    document.getElementById('stat-c').textContent=s.cp+'%';
+    document.getElementById('stat-r').textContent=s.rp+'%';
+    var ch=document.getElementById('panel-chip');
+    ch.style.visibility='visible';
+    ch.className='pol-chip '+s.dom;
+    ch.textContent=state.depth === 0 ? '전국' : (s.dom==='center'?'중도':(s.dom==='left'?'진보 ':'보수 ')+(IL[s.inten]||''));
+    
+    if (state.depth > 0) {
+      var loc=getLocationLabel();
+      document.getElementById('panel-title').textContent=loc||'—';
+      document.getElementById('panel-subtitle').textContent= state.depth===1 ? '지도에서 시군구를 클릭하세요' : '';
+    }
+  }
+  
+  // 선거구 UI는 숨김 처리 (추후 고도화 시 활성화)
+  document.getElementById('electoral-section').style.display='none';
+  
+  renderActiveTab();
+  updateWritePermission();
+  if(window.syncMobilePanel) window.syncMobilePanel();
+}
+
+function renderActiveTab(){
+  document.getElementById('tab-opinions').classList.toggle('active',state.activeTab==='opinions');
+  document.getElementById('tab-news').classList.toggle('active',state.activeTab==='news');
+  document.getElementById('opinions-pane').style.display=state.activeTab==='opinions'?'flex':'none';
+  document.getElementById('news-pane').style.display=state.activeTab==='news'?'':'none';
+
+  if(state.activeTab==='opinions') renderOpinions();
+  if(state.activeTab==='news') renderNews();
+  renderWrite();
+}
+
+function renderOpinions(){
+  var posts=getFilteredPosts();
+  var el=document.getElementById('opinions-list');
+  if(posts.length===0){
+    el.innerHTML='<div style="padding:32px 16px;text-align:center;color:#9BA3B8;font-size:13px;">해당 조건의 의견이 없습니다</div>';
+    return;
+  }
+  el.innerHTML=posts.map(function(p){
+    var leanCls=p.lean;
+    var leanLbl=LEAN_LABEL[p.lean]||p.lean;
+    var locStr=p.sigungu_name ? (SIDO_NAMES[p.sido]||p.sido)+' › '+p.sigungu_name : (SIDO_NAMES[p.sido]||p.sido);
+    var netVotes=p.votes_up-p.votes_dn;
+    return '<div class="post-item">'
+      +'<div class="post-header">'
+      +'<span class="pol-chip '+leanCls+'">'+leanLbl+'</span>'
+      +'<span class="post-loc">📍 '+locStr+'</span>'
+      +'<span class="ai-verified">● AI 검증</span>'
+      +'</div>'
+      +'<p class="post-body-text">'+p.text+'</p>'
+      +'<div class="post-footer">'
+      +'<span class="vote-btn" onclick="window.votePost('+p.id+',1)">▲</span>'
+      +'<span class="vote-score" style="color:'+(netVotes>=0?'#2C5FD4':'#D84040')+'">'+netVotes+'</span>'
+      +'<span class="vote-btn" onclick="window.votePost('+p.id+',-1)">▼</span>'
+      +'<span class="post-action">💬 '+p.comments+'</span>'
+      +'<span class="post-action" style="color:#9BA3B8;">👁 '+p.views+'</span>'
+      +'<span class="post-time">'+fmtTime(p.mins_ago)+'</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  if(window.syncMobilePanel) window.syncMobilePanel();
+}
+
+function renderNews(){
+  var news=getNewsForRegion();
+  var el=document.getElementById('news-list');
+  el.innerHTML=news.map(function(n){
+    return '<div class="news-item">'
+      +'<div class="news-meta"><span class="pol-chip news-tag">'+n.tag+'</span></div>'
+      +'<p class="news-title">'+n.title+'</p>'
+      +'<div class="news-link">원문 바로가기 →</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderWrite(){
+  var loc=getLocationLabel()||'지역 미선택';
+  var wdEl=document.getElementById('write-district-display');
+  var mwEl=document.getElementById('m-write-loc');
+  if(wdEl) wdEl.textContent=loc;
+  if(mwEl) mwEl.textContent=loc;
+}
+
+// ══════════════════════════════════════════════════════
+// Voting
+// ══════════════════════════════════════════════════════
+window.votePost=function(id,dir){
+  var p=ALL_POSTS.find(function(x){return x.id===id;});
+  if(!p)return;
+  p.votes_up+=dir>0?1:0;
+  p.votes_dn+=dir<0?1:0;
+  renderOpinions();
+};
+
+// ══════════════════════════════════════════════════════
+// Search
+// ══════════════════════════════════════════════════════
+var searchTimer=null;
+document.getElementById('search-input').addEventListener('input',function(){
+  clearTimeout(searchTimer);
+  var val=this.value;
+  searchTimer=setTimeout(function(){
+    state.searchQuery=val.trim();
+    renderOpinions();
+  },300);
+});
+
+// ══════════════════════════════════════════════════════
+// Write Submit
+// ══════════════════════════════════════════════════════
+function submitPostAction(textElId) {
+  if (!checkWritePermission()) return;
+  var textEl = document.getElementById(textElId);
+  var text = textEl.value.trim();
+  if(!text){alert('의견을 입력해주세요.');return;}
+  
+  var activeBtn = document.querySelector('.color-btn.selected');
+  var lean = activeBtn ? (activeBtn.dataset.lean||'center') : 'center';
+  
+  // 전국 뷰일 때도 내 위치 메타데이터가 담겨서 저장됨
+  var postSido = state.depth === 0 ? MY_LOC.sido : state.selectedSido;
+  var postSigungu = state.depth === 0 ? MY_LOC.sigungu : (state.selectedSigungu || null);
+  var postSidoName = state.depth === 0 ? SIDO_NAMES[MY_LOC.sido] : state.selectedSidoName;
+  var postSigunguName = state.depth === 0 ? MY_LOC.sigungu : (state.selectedSigungu || null);
+  
+  var newPost={
+    id:ALL_POSTS.length+1,
+    sido: postSido,
+    sigungu: postSigungu,
+    electoral: null,
+    sido_name: postSidoName,
+    sigungu_name: postSigunguName,
+    lean: lean,
+    text:text,
+    votes_up:0,votes_dn:0,comments:0,views:1,mins_ago:0,
+    user:'나',hot_score:0
+  };
+  ALL_POSTS.unshift(newPost);
+  
+  document.getElementById('write-textarea').value='';
+  document.getElementById('m-write-textarea').value='';
+  
+  state.activeTab='opinions';
+  renderActiveTab();
+  if(window.syncMobilePanel) window.syncMobilePanel();
+}
+
+document.getElementById('write-submit-btn').addEventListener('click', function(){ submitPostAction('write-textarea'); });
+window.mSubmitPost = function(){ submitPostAction('m-write-textarea'); };
+
+// ══════════════════════════════════════════════════════
+// Mobile Panel
+// ══════════════════════════════════════════════════════
+window.openMobilePanel=function(){
+  state.panelExpanded=true;
+  document.getElementById('mobile-panel').classList.add('open');
+  document.getElementById('mobile-panel-overlay').style.display='block';
+};
+window.closeMobilePanel=function(){
+  state.panelExpanded=false;
+  document.getElementById('mobile-panel').classList.remove('open');
+  document.getElementById('mobile-panel-overlay').style.display='none';
+};
+document.getElementById('mobile-panel-overlay').addEventListener('click',window.closeMobilePanel);
+document.getElementById('mobile-panel-close').addEventListener('click',window.closeMobilePanel);
+
+// 패널 드래그 핸들
+var dragStart=null;
+document.getElementById('mobile-drag-handle').addEventListener('touchstart',function(e){
+  dragStart=e.touches[0].clientY;
+},{passive:true});
+document.getElementById('mobile-drag-handle').addEventListener('touchmove',function(e){
+  if(!dragStart)return;
+  var diff=e.touches[0].clientY-dragStart;
+  if(diff>60) window.closeMobilePanel();
+},{passive:true});
+document.getElementById('mobile-drag-handle').addEventListener('touchend',function(){dragStart=null;});
+
+// ══════════════════════════════════════════════════════
+// Zoom Controls
+// ══════════════════════════════════════════════════════
+window.goLevel=function(level){
+  if(!sigunguFeatures.length)return;
+  if(level==='sigungu'){window.goMyLocation();return;}
+  
+  state.depth=0; 
+  state.selectedSido=null; 
+  state.selectedSigungu=null; 
+  state.selectedElectoral=null;
+  selectedFeat=null; 
+  gSel.selectAll('.sel-ring').remove();
+  
+  updateMapLayers();
+    
+  var fc={type:'FeatureCollection',features:sidoFeatures};
+  var b=pg.bounds(fc);
+  var k=Math.min(W/(b[1][0]-b[0][0]),H/(b[1][1]-b[0][1]))*0.88;
+  var cx=(b[0][0]+b[1][0])/2,cy=(b[0][1]+b[1][1])/2;
+  svg.transition().duration(800).ease(d3.easeCubicInOut)
+    .call(zB.transform,d3.zoomIdentity.translate(W/2-k*cx,H/2-k*cy).scale(k));
+  
+  renderPanel();
+};
+window.backToSido=function(){
+  state.depth=1;
+  state.selectedSigungu=null;
+  state.selectedElectoral=null;
+  selectedFeat=null;
+  gSel.selectAll('.sel-ring').remove();
+  updateMapLayers();
+
+  var feats = [];
+  gSido.selectAll('[data-sido="'+state.selectedSido+'"]').each(function(dd){feats.push(dd);});
+  if(feats.length){
+    var b = pg.bounds({type:'FeatureCollection', features:feats});
+    var dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
+    var cx = (b[0][0] + b[1][0]) / 2, cy = (b[0][1] + b[1][1]) / 2;
+    var sc = Math.min(20, 0.78 / Math.max(dx / W, dy / H));
+    svg.transition().duration(800).ease(d3.easeCubicInOut)
+      .call(zB.transform, d3.zoomIdentity.translate(W/2 - sc * cx, H/2 - sc * cy).scale(sc));
+  }
+  renderPanel();
+};
+window.goMyLocation=function(){
+  var pt=proj([126.904,37.557]);var k=10;
+  svg.transition().duration(750).ease(d3.easeCubicInOut)
+    .call(zB.transform,d3.zoomIdentity.translate(W/2-pt[0]*k,H/2-pt[1]*k).scale(k));
+};
+window.adjustZoom=function(f){svg.transition().duration(280).call(zB.scaleBy,f);};
+window.resetMap=function(){
+  window.goLevel('sido');
+};
+window.setTab=function(tab){
+  state.activeTab=tab;
+  renderActiveTab();
+};
+window.mSetTab=function(tab){
+  window.setTab(tab);
+  document.getElementById('m-tab-opinions').className='panel-tab '+(tab==='opinions'?'active':'');
+  document.getElementById('m-tab-news').className='panel-tab '+(tab==='news'?'active':'');
+  document.getElementById('m-tab-opinions').style.color=tab==='opinions'?'var(--accent)':'#9BA3B8';
+  document.getElementById('m-tab-opinions').style.borderBottomColor=tab==='opinions'?'var(--accent)':'transparent';
+  document.getElementById('m-tab-news').style.color=tab==='news'?'var(--accent)':'#9BA3B8';
+  document.getElementById('m-tab-news').style.borderBottomColor=tab==='news'?'var(--accent)':'transparent';
+  
+  document.getElementById('m-opinions-pane').style.display=tab==='opinions'?'flex':'none';
+  document.getElementById('m-news-pane').style.display=tab==='news'?'block':'none';
+};
+window.setFilter=function(f){
+  state.opinionFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(function(b){
+    b.classList.toggle('active',b.dataset.lean===f);
+  });
+  renderOpinions();
+};
+window.setSort=function(s){
+  state.sortMode=s;
+  document.querySelectorAll('.sort-btn').forEach(function(b){
+    b.classList.toggle('active',b.dataset.sort===s);
+  });
+  renderOpinions();
+};
+window.selectColor=function(btn){
+  var lean = btn.dataset.lean;
+  document.querySelectorAll('.color-btn').forEach(function(b){
+    b.classList.remove('selected');
+    b.textContent = b.textContent.replace(' ✓','');
+  });
+  document.querySelectorAll('.color-btn[data-lean="'+lean+'"]').forEach(function(b){
+    b.classList.add('selected');
+    b.textContent += ' ✓';
+  });
+};
+
+// 모바일 패널에 데스크탑 패널 미러링
+window.syncMobilePanel = function() {
+  var title = document.getElementById('panel-title').textContent;
+  document.getElementById('mobile-panel-title').textContent = title;
+  var bcHtml = document.getElementById('breadcrumb').innerHTML;
+  
+  var statsL = document.getElementById('stat-bar-l').style.width;
+  var statsC = document.getElementById('stat-bar-c').style.width;
+  var statsR = document.getElementById('stat-bar-r').style.width;
+  document.getElementById('m-stat-bar-l').style.width = statsL;
+  document.getElementById('m-stat-bar-c').style.width = statsC;
+  document.getElementById('m-stat-bar-r').style.width = statsR;
+  
+  document.getElementById('m-stat-l').textContent = document.getElementById('stat-l').textContent;
+  document.getElementById('m-stat-c').textContent = document.getElementById('stat-c').textContent;
+  document.getElementById('m-stat-r').textContent = document.getElementById('stat-r').textContent;
+
+  document.getElementById('mobile-panel-bc').innerHTML = bcHtml;
+  document.getElementById('m-opinions-list').innerHTML = document.getElementById('opinions-list').innerHTML;
+  document.getElementById('m-news-list').innerHTML = document.getElementById('news-list').innerHTML;
+};
+
+// Expose resize fn
+window._mapResizeFn = function(){
+  window.dispatchEvent(new Event('resize'));
+};
+
+})();
+</script>
+
+</body>
+</html>

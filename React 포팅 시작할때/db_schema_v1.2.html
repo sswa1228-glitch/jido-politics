@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<!-- 지도정치 DB 스키마 v1.2 | 2026-06-11 -->
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — DB 스키마 v1.2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --left: #2B72C8; --right: #C82020; --center: #6B7280;
+  --accent: #C8D400; --green: #2ECC71; --orange: #E67E22; --purple: #8B5CF6;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', monospace; min-height: 100vh; padding: 24px; }
+
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+
+/* Layout grid */
+.schema-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+@media (max-width: 900px) { .schema-grid { grid-template-columns: 1fr; } }
+
+/* Table card */
+.tbl-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.tbl-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 2px solid var(--border);
+  font-size: 13px; font-weight: 800; letter-spacing: .02em;
+}
+.tbl-icon { font-size: 15px; }
+.tbl-name { flex: 1; }
+.tbl-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; letter-spacing: .05em; }
+.badge-core    { background: rgba(200,212,0,.15); color: var(--accent); }
+.badge-feature { background: rgba(139,92,246,.15); color: var(--purple); }
+.badge-log     { background: rgba(230,126,34,.15); color: var(--orange); }
+
+.tbl-fields { padding: 8px 0; }
+.field-row {
+  display: grid; grid-template-columns: 18px 1fr 90px 100px;
+  gap: 6px; align-items: center;
+  padding: 5px 14px; font-size: 11px; line-height: 1.4;
+  border-bottom: 1px solid rgba(42,47,62,.5);
+}
+.field-row:last-child { border-bottom: none; }
+.field-row:hover { background: var(--surface2); }
+.fi { font-size: 10px; color: var(--text-faint); text-align: center; }
+.fn { color: var(--text); font-weight: 600; font-family: 'Courier New', monospace; }
+.fn.pk { color: var(--accent); }
+.fn.fk { color: var(--purple); }
+.ft { color: var(--text-faint); font-size: 10px; font-family: 'Courier New', monospace; }
+.fd { color: var(--text-dim); font-size: 10px; }
+.tag-pk  { display: inline-block; background: rgba(200,212,0,.12); color: var(--accent); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.tag-fk  { display: inline-block; background: rgba(139,92,246,.12); color: var(--purple); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.tag-idx { display: inline-block; background: rgba(46,204,113,.1); color: var(--green); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.tag-nn  { display: inline-block; background: rgba(200,212,0,.07); color: #888; font-size: 8px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+
+/* Section label */
+.section-title { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Relations diagram */
+.relations { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 28px; }
+.rel-title { font-size: 13px; font-weight: 800; margin-bottom: 16px; color: var(--text-dim); }
+.rel-list { display: flex; flex-direction: column; gap: 9px; }
+.rel-row { display: flex; align-items: center; gap: 0; font-size: 11px; font-family: 'Courier New', monospace; }
+.rel-from { color: var(--accent); font-weight: 700; min-width: 160px; }
+.rel-arrow { color: var(--text-faint); margin: 0 10px; }
+.rel-to { color: var(--purple); font-weight: 700; min-width: 160px; }
+.rel-note { color: var(--text-dim); font-size: 10px; margin-left: 8px; font-family: 'Noto Sans KR', sans-serif; }
+
+/* Index & notes */
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .notes-grid { grid-template-columns: 1fr; } }
+.note-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.note-card h3 { font-size: 12px; font-weight: 800; color: var(--text-dim); margin-bottom: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.note-item { display: flex; gap: 8px; margin-bottom: 8px; font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.note-item::before { content: '▸'; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.note-item code { background: var(--surface2); color: var(--text); padding: 1px 5px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px; }
+.note-item strong { color: var(--text); }
+
+/* Color dot */
+.cdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+  <!-- v1.2 현재 상태 배너 -->
+  <div style="background:rgba(200,212,0,.08);border:1px solid rgba(200,212,0,.25);border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:11px;display:flex;align-items:center;gap:12px;">
+    <span style="background:rgba(200,212,0,.2);color:#C8D400;font-size:9px;font-weight:900;padding:3px 8px;border-radius:5px;white-space:nowrap;">BASE v1.2.0</span>
+    <span style="color:#7A8099;">현재 프로토타입 기준 (단일 HTML, 목업 데이터). 이 문서는 React + 백엔드 전환 시 기준 스펙입니다.</span>
+    <span style="margin-left:auto;color:#3D4257;white-space:nowrap;">2026-06-11</span>
+  </div>
+
+<h1>지도<span>정치</span> — DB 스키마</h1>
+<p class="subtitle">PostgreSQL 기준 · 총 8개 테이블 · 2026.06 v1.0 · <span style="color:#C8D400;">base: v1.2.0</span> · 2026-06-11</p>
+
+<!-- ── CORE TABLES ── -->
+<div class="section-title">Core — 사용자 & 지역구</div>
+<div class="schema-grid" style="grid-template-columns: repeat(2, 1fr);">
+
+  <!-- users -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--accent);">
+      <span class="tbl-icon">👤</span>
+      <span class="tbl-name">users</span>
+      <span class="tbl-badge badge-core">CORE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">email</span>
+        <span class="ft">varchar(255)</span>
+        <span class="fd">로그인 이메일 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">nickname</span>
+        <span class="ft">varchar(30)</span>
+        <span class="fd">표시명 (익명화)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">password_hash</span>
+        <span class="ft">varchar(255)</span>
+        <span class="fd">bcrypt 해시</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">political_lean</span>
+        <span class="ft">enum</span>
+        <span class="fd">left / center / right</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">district_id<span class="tag-fk">FK</span></span>
+        <span class="ft">varchar(10)</span>
+        <span class="fd">소속 지역구 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">location_verified</span>
+        <span class="ft">boolean</span>
+        <span class="fd">위치 인증 여부</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">location_verified_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">마지막 인증 시각</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">status</span>
+        <span class="ft">enum</span>
+        <span class="fd">active / warned / banned</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">warning_count</span>
+        <span class="ft">int</span>
+        <span class="fd">경고 누적 횟수</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">provider</span>
+        <span class="ft">varchar(20)</span>
+        <span class="fd">email / kakao / naver</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">가입일시</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- districts -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--accent);">
+      <span class="tbl-icon">🗺️</span>
+      <span class="tbl-name">districts</span>
+      <span class="tbl-badge badge-core">CORE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">varchar(10)</span>
+        <span class="fd">SGG 코드 (e.g. 11110)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">name</span>
+        <span class="ft">varchar(50)</span>
+        <span class="fd">지역구명 (종로구)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">sido_code</span>
+        <span class="ft">varchar(5)</span>
+        <span class="fd">광역시도 코드 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">sido_name</span>
+        <span class="ft">varchar(30)</span>
+        <span class="fd">광역시도명</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">assembly_district</span>
+        <span class="ft">varchar(50)</span>
+        <span class="fd">국회 선거구명</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">geojson_simplified</span>
+        <span class="ft">jsonb</span>
+        <span class="fd">렌더링용 간략 경계</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">centroid_lat</span>
+        <span class="ft">decimal(9,6)</span>
+        <span class="fd">중심 위도</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">centroid_lng</span>
+        <span class="ft">decimal(9,6)</span>
+        <span class="fd">중심 경도</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">stat_left</span>
+        <span class="ft">int</span>
+        <span class="fd">진보 의견 수 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">stat_center</span>
+        <span class="ft">int</span>
+        <span class="fd">중도 의견 수 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">stat_right</span>
+        <span class="ft">int</span>
+        <span class="fd">보수 의견 수 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">dominant</span>
+        <span class="ft">enum</span>
+        <span class="fd">left / center / right (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">intensity</span>
+        <span class="ft">int</span>
+        <span class="fd">1~3 강도 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">stats_updated_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">캐시 마지막 갱신</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── FEATURE TABLES ── -->
+<div class="section-title">Feature — 게시글 & 뉴스</div>
+<div class="schema-grid">
+
+  <!-- posts -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--left);">
+      <span class="tbl-icon">✏️</span>
+      <span class="tbl-name">posts</span>
+      <span class="tbl-badge badge-feature">FEATURE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">user_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ users.id <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">district_id<span class="tag-fk">FK</span></span>
+        <span class="ft">varchar(10)</span>
+        <span class="fd">→ districts.id <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">political_lean</span>
+        <span class="ft">enum</span>
+        <span class="fd">left / center / right</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">content</span>
+        <span class="ft">text</span>
+        <span class="fd">본문 <span class="tag-nn">NOT NULL</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">status</span>
+        <span class="ft">enum</span>
+        <span class="fd">active / hidden / deleted / pending</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">ai_score</span>
+        <span class="ft">decimal(4,3)</span>
+        <span class="fd">AI 품질 점수 (0~1)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">ai_filter_reason</span>
+        <span class="ft">varchar(100)</span>
+        <span class="fd">필터 사유 코드</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">like_count</span>
+        <span class="ft">int</span>
+        <span class="fd">좋아요 수 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">report_count</span>
+        <span class="ft">int</span>
+        <span class="fd">신고 수 (캐시)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">is_abuse_flagged</span>
+        <span class="ft">boolean</span>
+        <span class="fd">어뷰징 의심 플래그</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">location_verified</span>
+        <span class="ft">boolean</span>
+        <span class="fd">작성 시 위치 인증됨</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd"><span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">updated_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">수정일시</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">deleted_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">soft delete</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- news_articles -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--accent);">
+      <span class="tbl-icon">📰</span>
+      <span class="tbl-name">news_articles</span>
+      <span class="tbl-badge badge-feature">FEATURE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">district_id<span class="tag-fk">FK</span></span>
+        <span class="ft">varchar(10)</span>
+        <span class="fd">연관 지역구 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">title</span>
+        <span class="ft">varchar(300)</span>
+        <span class="fd">기사 제목</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">summary</span>
+        <span class="ft">text</span>
+        <span class="fd">AI 요약 (2~3줄)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">source_url</span>
+        <span class="ft">text</span>
+        <span class="fd">딥링크 원문 URL</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">source_name</span>
+        <span class="ft">varchar(50)</span>
+        <span class="fd">언론사명</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">is_national</span>
+        <span class="ft">boolean</span>
+        <span class="fd">전국 헤드라인 여부</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">political_tone</span>
+        <span class="ft">enum</span>
+        <span class="fd">neutral / left / right (AI 분류)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">relevance_score</span>
+        <span class="ft">decimal(4,3)</span>
+        <span class="fd">지역 연관도 점수</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">published_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">기사 발행일 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">crawled_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">크롤링 시각</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">url_hash</span>
+        <span class="ft">varchar(64)</span>
+        <span class="fd">중복 방지 해시 <span class="tag-idx">UNIQUE</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- post_likes -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--green);">
+      <span class="tbl-icon">👍</span>
+      <span class="tbl-name">post_likes</span>
+      <span class="tbl-badge badge-feature">FEATURE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">post_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ posts.id <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">user_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ users.id</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">좋아요 일시</span>
+      </div>
+      <div class="field-row" style="background:rgba(46,204,113,.05);">
+        <span class="fi">⚠️</span>
+        <span class="fn" style="color:var(--green); font-size:10px; grid-column: 2/-1;">UNIQUE (post_id, user_id) — 중복 좋아요 방지</span>
+        <span class="ft"></span>
+        <span class="fd"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── LOG & MODERATION ── -->
+<div class="section-title">Moderation & Log — 어뷰징 관리</div>
+<div class="schema-grid">
+
+  <!-- reports -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--right);">
+      <span class="tbl-icon">⚑</span>
+      <span class="tbl-name">reports</span>
+      <span class="tbl-badge badge-log">MOD</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">post_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ posts.id <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">reporter_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ users.id</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">reason</span>
+        <span class="ft">enum</span>
+        <span class="fd">abuse / hate / spam / irrelevant</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">detail</span>
+        <span class="ft">text</span>
+        <span class="fd">신고 상세 (선택)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">status</span>
+        <span class="ft">enum</span>
+        <span class="fd">pending / reviewed / dismissed</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">reviewed_by<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ users.id (관리자)</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">신고 일시</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">reviewed_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">처리 일시</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- user_blocks -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--orange);">
+      <span class="tbl-icon">🚫</span>
+      <span class="tbl-name">user_blocks</span>
+      <span class="tbl-badge badge-log">MOD</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">blocker_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">차단하는 유저 <span class="tag-idx">IDX</span></span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">blocked_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">차단당하는 유저</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd">차단 일시</span>
+      </div>
+      <div class="field-row" style="background:rgba(230,126,34,.05);">
+        <span class="fi">⚠️</span>
+        <span class="fn" style="color:var(--orange); font-size:10px; grid-column: 2/-1;">UNIQUE (blocker_id, blocked_id)</span>
+        <span class="ft"></span>
+        <span class="fd"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- moderation_log -->
+  <div class="tbl-card">
+    <div class="tbl-header" style="border-top: 3px solid var(--purple);">
+      <span class="tbl-icon">📋</span>
+      <span class="tbl-name">moderation_log</span>
+      <span class="tbl-badge badge-log">LOG</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field-row">
+        <span class="fi">🔑</span>
+        <span class="fn pk">id<span class="tag-pk">PK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">기본키</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">post_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">→ posts.id</span>
+      </div>
+      <div class="field-row">
+        <span class="fi">🔗</span>
+        <span class="fn fk">admin_id<span class="tag-fk">FK</span></span>
+        <span class="ft">uuid</span>
+        <span class="fd">처리 관리자</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">action</span>
+        <span class="ft">enum</span>
+        <span class="fd">hide / delete / restore / warn</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">source</span>
+        <span class="ft">enum</span>
+        <span class="fd">ai_auto / report / manual</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">reason</span>
+        <span class="ft">text</span>
+        <span class="fd">처리 사유</span>
+      </div>
+      <div class="field-row">
+        <span class="fi"></span>
+        <span class="fn">created_at</span>
+        <span class="ft">timestamptz</span>
+        <span class="fd"><span class="tag-idx">IDX</span></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── RELATIONS ── -->
+<div class="relations">
+  <div class="rel-title">🔗 테이블 관계도</div>
+  <div class="rel-list">
+    <div class="rel-row"><span class="rel-from">users.district_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">districts.id</span><span class="rel-note">유저가 속한 지역구 (위치 인증 시 설정)</span></div>
+    <div class="rel-row"><span class="rel-from">posts.user_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">users.id</span><span class="rel-note">게시글 작성자</span></div>
+    <div class="rel-row"><span class="rel-from">posts.district_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">districts.id</span><span class="rel-note">게시글이 속한 지역구</span></div>
+    <div class="rel-row"><span class="rel-from">news_articles.district_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">districts.id</span><span class="rel-note">뉴스가 연관된 지역구 (NULL 가능 = 전국)</span></div>
+    <div class="rel-row"><span class="rel-from">post_likes.post_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">posts.id</span><span class="rel-note">어떤 게시글에 좋아요</span></div>
+    <div class="rel-row"><span class="rel-from">reports.post_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">posts.id</span><span class="rel-note">신고 대상 게시글</span></div>
+    <div class="rel-row"><span class="rel-from">user_blocks.blocker_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">users.id</span><span class="rel-note">차단 주체</span></div>
+    <div class="rel-row"><span class="rel-from">user_blocks.blocked_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">users.id</span><span class="rel-note">차단 대상</span></div>
+    <div class="rel-row"><span class="rel-from">moderation_log.post_id</span><span class="rel-arrow">──────▶</span><span class="rel-to">posts.id</span><span class="rel-note">처리 대상 게시글</span></div>
+  </div>
+</div>
+
+<!-- ── NOTES ── -->
+<div class="notes-grid">
+  <div class="note-card">
+    <h3>⚡ 성능 전략</h3>
+    <div class="note-item"><code>districts.stat_*</code> 필드는 실시간 집계 대신 <strong>캐시 컬럼</strong>으로 운영 — 게시글 등록/삭제 시 트리거로 업데이트</div>
+    <div class="note-item"><code>posts</code>에 <strong>복합 인덱스</strong> <code>(district_id, political_lean, status, created_at)</code> — 지역구별 탭 조회 최적화</div>
+    <div class="note-item"><code>news_articles.url_hash</code> UNIQUE 인덱스로 크롤링 <strong>중복 방지</strong></div>
+    <div class="note-item"><code>posts.deleted_at</code> NULL 체크로 <strong>soft delete</strong> — 복구 가능, 통계에서 제외</div>
+  </div>
+  <div class="note-card">
+    <h3>🛡️ 어뷰징 흐름</h3>
+    <div class="note-item">게시글 등록 → <strong>AI 1차 판단</strong> (<code>ai_score</code> 저장) → 기준 미달 시 <code>status = pending</code></div>
+    <div class="note-item">신고 5회 누적 (<code>report_count ≥ 5</code>) → <strong>자동 관리자 큐</strong> 적재</div>
+    <div class="note-item">관리자 처리 시 <code>moderation_log</code>에 전체 이력 기록 — <strong>source 필드</strong>로 AI/신고/수동 구분</div>
+    <div class="note-item">반복 어뷰저 → <code>users.warning_count</code> 누적 → 3회 시 <code>status = banned</code> 자동 전환</div>
+  </div>
+  <div class="note-card">
+    <h3>📍 위치 인증 로직</h3>
+    <div class="note-item"><strong>GPS 좌표</strong> 수신 → PostGIS 또는 Turf.js로 <code>districts</code> 경계와 교차 판정</div>
+    <div class="note-item">인증 성공 시 <code>users.district_id</code> 업데이트 + <code>location_verified_at</code> 기록</div>
+    <div class="note-item">인증 유효기간 <strong>30일</strong> — 만료 시 재인증 요구 (앱 재실행 시 체크)</div>
+    <div class="note-item">게시글 작성 시 <code>posts.location_verified = true</code> 스냅샷 — 추후 분쟁 대비</div>
+  </div>
+  <div class="note-card">
+    <h3>🗞️ 뉴스 크롤링 설계</h3>
+    <div class="note-item"><strong>크롤러</strong> (Python) → 지역구명 키워드 검색 → 기사 수집</div>
+    <div class="note-item"><strong>Claude API</strong> → 기사 요약 (<code>summary</code>) + 지역 연관도 점수 (<code>relevance_score</code>) + 정치 톤 분류</div>
+    <div class="note-item"><code>is_national = true</code> 상위 5건 → 상단 티커 표시 / 나머지 → 지역구 말풍선</div>
+    <div class="note-item">크롤링 주기: <strong>전국 뉴스 30분</strong> / <strong>지역 뉴스 2시간</strong> 단위</div>
+  </div>
+</div>
+
+</body>
+</html>

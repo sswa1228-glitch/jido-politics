@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<!-- 지도정치 React 컴포넌트 + 폴더 구조 v1.2 | 2026-06-11 -->
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — React 컴포넌트 + 폴더 구조 v1.2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --red: #C82020; --green: #2ECC71;
+  --orange: #E67E22; --purple: #8B5CF6; --teal: #14B8A6; --pink: #EC4899;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; padding: 24px; min-height: 100vh; }
+
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+
+.section-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 14px; margin-top: 28px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── FOLDER TREE ── */
+.tree-wrap {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px 20px; font-family: 'Courier New', monospace; font-size: 12px;
+  line-height: 1.9; overflow-x: auto;
+}
+.tree-line { display: flex; align-items: baseline; gap: 0; white-space: nowrap; }
+.t-indent { color: var(--text-faint); }
+.t-dir  { color: var(--accent); font-weight: 700; }
+.t-file { color: var(--text-dim); }
+.t-file.page    { color: #7BAED4; }
+.t-file.comp    { color: var(--text); }
+.t-file.hook    { color: var(--purple); }
+.t-file.store   { color: var(--orange); }
+.t-file.util    { color: var(--teal); }
+.t-file.type    { color: var(--pink); }
+.t-file.style   { color: var(--green); }
+.t-comment { color: var(--text-faint); font-style: italic; margin-left: 10px; font-family: 'Noto Sans KR', sans-serif; font-size: 11px; }
+
+/* ── TWO / THREE COL ── */
+.two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 960px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+/* ── COMPONENT CARD ── */
+.comp-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden;
+}
+.comp-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700;
+}
+.comp-icon { font-size: 15px; }
+.comp-name { flex: 1; font-family: 'Courier New', monospace; }
+.comp-body { padding: 14px; }
+.badge {
+  display: inline-flex; align-items: center; font-size: 9px; font-weight: 800;
+  padding: 2px 7px; border-radius: 10px; letter-spacing: .04em; white-space: nowrap;
+}
+.badge-page   { background: rgba(43,114,200,.15);  color: #7BAED4; }
+.badge-comp   { background: rgba(232,234,240,.08); color: var(--text-dim); }
+.badge-hook   { background: rgba(139,92,246,.15);  color: var(--purple); }
+.badge-store  { background: rgba(230,126,34,.15);  color: var(--orange); }
+.badge-util   { background: rgba(20,184,166,.15);  color: var(--teal); }
+
+.prop-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+.prop-table th {
+  text-align: left; padding: 5px 9px; background: var(--surface2);
+  color: var(--text-faint); font-weight: 700; font-size: 10px; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.prop-table td {
+  padding: 6px 9px; border-bottom: 1px solid rgba(42,47,62,.5);
+  color: var(--text-dim); vertical-align: top;
+}
+.prop-table td:first-child { color: var(--accent); font-family: 'Courier New', monospace; font-size: 11px; }
+.prop-table td:nth-child(2) { color: var(--purple); font-family: 'Courier New', monospace; font-size: 10px; }
+.prop-table tr:last-child td { border-bottom: none; }
+
+.item-list { display: flex; flex-direction: column; gap: 7px; }
+.item { display: flex; gap: 8px; font-size: 11px; color: var(--text-dim); line-height: 1.55; }
+.item-dot { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; }
+.item strong { color: var(--text); }
+.item code {
+  background: var(--surface2); color: var(--text); padding: 1px 5px;
+  border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px;
+}
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+  padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 11px;
+  color: #A8B4D0; line-height: 1.75; overflow-x: auto; margin-bottom: 10px;
+}
+.kw  { color: var(--purple); }
+.fn  { color: var(--accent); }
+.str { color: var(--green); }
+.cm  { color: var(--text-faint); font-style: italic; }
+.type-c { color: var(--pink); }
+.num { color: var(--orange); }
+
+/* ── DATA FLOW ── */
+.flow-wrap { padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.flow-row  { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.flow-node {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+  font-size: 11px; font-weight: 600; min-width: 110px; text-align: center;
+}
+.fn-icon  { font-size: 15px; }
+.fn-label { font-size: 11px; font-weight: 700; }
+.fn-sub   { font-size: 9px; color: var(--text-dim); }
+.flow-arrow { color: var(--text-faint); font-size: 14px; }
+.fn-store { background: rgba(230,126,34,.1); border-color: rgba(230,126,34,.3); color: var(--orange); }
+.fn-comp  { background: var(--surface2); }
+.fn-hook  { background: rgba(139,92,246,.1); border-color: rgba(139,92,246,.3); color: var(--purple); }
+.fn-api   { background: rgba(20,184,166,.1); border-color: rgba(20,184,166,.3); color: var(--teal); }
+.fn-page  { background: rgba(43,114,200,.1); border-color: rgba(43,114,200,.3); color: #7BAED4; }
+
+/* ── DEPENDENCY MAP ── */
+.dep-map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 10px; overflow: hidden; }
+.dep-cell { background: var(--surface); padding: 12px 14px; }
+.dep-layer { font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+.dep-item { font-size: 11px; color: var(--text-dim); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; font-family: 'Courier New', monospace; }
+.dep-item::before { content: '·'; color: var(--text-faint); }
+.dep-item.hl { color: var(--text); }
+
+/* naming convention table */
+.conv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.conv-table th { text-align: left; padding: 7px 12px; background: var(--surface2); color: var(--text-dim); font-weight: 700; font-size: 10px; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.conv-table td { padding: 8px 12px; border-bottom: 1px solid rgba(42,47,62,.5); color: var(--text-dim); vertical-align: top; }
+.conv-table td:first-child { color: var(--accent); font-family: 'Courier New', monospace; font-weight: 700; }
+.conv-table td:nth-child(2) { color: var(--text); }
+.conv-table tr:last-child td { border-bottom: none; }
+.conv-table tr:hover td { background: var(--surface2); }
+</style>
+</head>
+<body>
+
+  <!-- v1.2 현재 상태 배너 -->
+  <div style="background:rgba(200,212,0,.08);border:1px solid rgba(200,212,0,.25);border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:11px;display:flex;align-items:center;gap:12px;">
+    <span style="background:rgba(200,212,0,.2);color:#C8D400;font-size:9px;font-weight:900;padding:3px 8px;border-radius:5px;white-space:nowrap;">BASE v1.2.0</span>
+    <span style="color:#7A8099;">현재 프로토타입 기준 (단일 HTML, 목업 데이터). 이 문서는 React + 백엔드 전환 시 기준 스펙입니다.</span>
+    <span style="margin-left:auto;color:#3D4257;white-space:nowrap;">2026-06-11</span>
+  </div>
+
+<h1>지도<span>정치</span> — React 컴포넌트 + 폴더 구조</h1>
+<p class="subtitle">Vite + React 18 + TypeScript + Zustand + React Query + Tailwind · <span style="color:#C8D400;">base: v1.2.0</span> · 2026-06-11</p>
+
+<!-- ── 폴더 구조 ── -->
+<div class="section-title">폴더 구조 전체</div>
+<div class="tree-wrap">
+  <div class="tree-line"><span class="t-dir">src/</span></div>
+
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">pages/</span><span class="t-comment">라우트 단위 페이지 컴포넌트</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file page">MapPage.tsx</span><span class="t-comment">메인 지도 뷰 (홈)</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file page">DistrictPage.tsx</span><span class="t-comment">지역구 상세 (모바일 전용 라우트)</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file page">LoginPage.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file page">SignupPage.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file page">MyPage.tsx</span><span class="t-comment">마이페이지 (내 글·차단·설정)</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">components/</span><span class="t-comment">재사용 UI 컴포넌트</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">layout/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">TopNav.tsx</span><span class="t-comment">상단 네비게이션 바</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">NewsTicker.tsx</span><span class="t-comment">전국 뉴스 스크롤 티커</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">BottomNav.tsx</span><span class="t-comment">모바일 하단 탭바</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">map/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">KoreaMap.tsx</span><span class="t-comment">D3 + GeoJSON 지도 메인</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">MapDistrict.tsx</span><span class="t-comment">개별 지역구 path + 색상 계산</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">MapTooltip.tsx</span><span class="t-comment">hover 말풍선 (비율바 + 뉴스)</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">MapLegend.tsx</span><span class="t-comment">7단계 색상 범례</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">MapToolbar.tsx</span><span class="t-comment">줌 탭 (광역시도 / 시군구)</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">panel/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">SidePanel.tsx</span><span class="t-comment">데스크탑 우측 패널 껍데기</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">DistrictHeader.tsx</span><span class="t-comment">지역구명 + 우세 칩</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">StatsBar.tsx</span><span class="t-comment">좌/중/우 비율 바 + 강도 표시</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">OpinionTabs.tsx</span><span class="t-comment">전체/진보/중도/보수/핫이슈 탭</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">WriteCTA.tsx</span><span class="t-comment">글쓰기 유도 버튼 (비로그인 대응)</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">post/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">PostList.tsx</span><span class="t-comment">게시글 무한스크롤 리스트</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">PostItem.tsx</span><span class="t-comment">개별 게시글 카드</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">PostActions.tsx</span><span class="t-comment">좋아요 / 신고 / 더보기 버튼</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">PostWriteBar.tsx</span><span class="t-comment">하단 고정 작성 바 (정치색 선택 포함)</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">news/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">NewsItem.tsx</span><span class="t-comment">뉴스 카드 (딥링크 포함)</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">NewsBubble.tsx</span><span class="t-comment">지도 말풍선 내 뉴스 목록</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-dir">auth/</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">LoginForm.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   ├── </span><span class="t-file comp">SignupForm.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│   │   └── </span><span class="t-file comp">LocationVerify.tsx</span><span class="t-comment">GPS 인증 UI + 진행 상태</span></div>
+
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-dir">ui/</span><span class="t-comment">디자인 시스템 원자 컴포넌트</span></div>
+  <div class="tree-line"><span class="t-indent">│       ├── </span><span class="t-file comp">Chip.tsx</span><span class="t-comment">진보/중도/보수/뉴스 칩</span></div>
+  <div class="tree-line"><span class="t-indent">│       ├── </span><span class="t-file comp">Button.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│       ├── </span><span class="t-file comp">Modal.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│       ├── </span><span class="t-file comp">Spinner.tsx</span></div>
+  <div class="tree-line"><span class="t-indent">│       └── </span><span class="t-file comp">Toast.tsx</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">hooks/</span><span class="t-comment">커스텀 훅</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">useKoreaMap.ts</span><span class="t-comment">D3 지도 초기화 + 줌 + 선택 상태</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">useDistrict.ts</span><span class="t-comment">선택된 지역구 데이터 페칭</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">usePosts.ts</span><span class="t-comment">게시글 무한스크롤 + 필터</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">useNews.ts</span><span class="t-comment">지역 뉴스 + 전국 티커 페칭</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">useLocation.ts</span><span class="t-comment">GPS → 지역구 매핑 + 인증</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file hook">useAuth.ts</span><span class="t-comment">로그인 상태 + 토큰 관리</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file hook">usePostWrite.ts</span><span class="t-comment">게시글 작성 폼 상태 + 제출</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">store/</span><span class="t-comment">Zustand 전역 상태</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file store">mapStore.ts</span><span class="t-comment">선택된 지역구 · 줌 레벨 · 지도 통계</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file store">authStore.ts</span><span class="t-comment">유저 정보 · 로그인 여부 · 위치 인증</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file store">uiStore.ts</span><span class="t-comment">모달 · 토스트 · 패널 열림 상태</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">api/</span><span class="t-comment">React Query + axios 레이어</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">client.ts</span><span class="t-comment">axios 인스턴스 + 인터셉터</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">posts.ts</span><span class="t-comment">게시글 CRUD API 함수</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">districts.ts</span><span class="t-comment">지역구 통계 + GeoJSON API</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">news.ts</span><span class="t-comment">뉴스 페칭 API</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file util">auth.ts</span><span class="t-comment">로그인 · 회원가입 · 위치인증 API</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">utils/</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">districtColor.ts</span><span class="t-comment">dominant + intensity → 색상 코드 변환</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file util">geoHelper.ts</span><span class="t-comment">GPS 좌표 → 지역구 매핑 (Turf.js)</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file util">formatters.ts</span><span class="t-comment">날짜 · 숫자 포맷 유틸</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">types/</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file type">district.ts</span><span class="t-comment">District · DistrictStats 타입</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file type">post.ts</span><span class="t-comment">Post · PoliticalLean · PostStatus 타입</span></div>
+  <div class="tree-line"><span class="t-indent">│   ├── </span><span class="t-file type">news.ts</span><span class="t-comment">NewsArticle 타입</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file type">user.ts</span><span class="t-comment">User · AuthState 타입</span></div>
+
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-dir">assets/</span></div>
+  <div class="tree-line"><span class="t-indent">│   └── </span><span class="t-file style">korea_sigungu.json</span><span class="t-comment">250개 시군구 GeoJSON (빌드 시 번들)</span></div>
+  <div class="tree-line"><span class="t-indent">│</span></div>
+  <div class="tree-line"><span class="t-indent">├── </span><span class="t-file style">App.tsx</span><span class="t-comment">라우터 + QueryClient + 전역 레이아웃</span></div>
+  <div class="tree-line"><span class="t-indent">└── </span><span class="t-file style">main.tsx</span><span class="t-comment">진입점</span></div>
+</div>
+
+<!-- ── 핵심 컴포넌트 상세 ── -->
+<div class="section-title">핵심 컴포넌트 Props / 역할</div>
+<div class="two-col">
+
+  <!-- KoreaMap -->
+  <div class="comp-card">
+    <div class="comp-header" style="border-top:3px solid var(--accent);">
+      <span class="comp-icon">🗺️</span>
+      <span class="comp-name">KoreaMap.tsx</span>
+      <span class="badge badge-comp">Component</span>
+    </div>
+    <div class="comp-body">
+      <table class="prop-table">
+        <tr><th>Props</th><th>Type</th><th>설명</th></tr>
+        <tr><td>geoData</td><td>FeatureCollection</td><td>GeoJSON 지역구 데이터</td></tr>
+        <tr><td>districtStats</td><td>Record&lt;string, Stats&gt;</td><td>지역구별 통계 맵</td></tr>
+        <tr><td>selectedId</td><td>string | null</td><td>선택된 지역구 ID</td></tr>
+        <tr><td>onSelect</td><td>(id: string) =&gt; void</td><td>지역구 클릭 콜백</td></tr>
+        <tr><td>zoomLevel</td><td>'sido' | 'sigungu'</td><td>현재 줌 단계</td></tr>
+      </table>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div><code>useKoreaMap</code> 훅으로 D3 초기화 로직 분리 — 컴포넌트는 렌더링만 담당</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>리사이즈 시 SVG viewBox 재계산 — <code>ResizeObserver</code> 사용</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>줌/패닝은 <code>d3.zoom()</code> 내부 처리, 외부에 노출 안 함</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PostList -->
+  <div class="comp-card">
+    <div class="comp-header" style="border-top:3px solid var(--blue);">
+      <span class="comp-icon">📋</span>
+      <span class="comp-name">PostList.tsx</span>
+      <span class="badge badge-comp">Component</span>
+    </div>
+    <div class="comp-body">
+      <table class="prop-table">
+        <tr><th>Props</th><th>Type</th><th>설명</th></tr>
+        <tr><td>districtId</td><td>string</td><td>조회할 지역구 ID</td></tr>
+        <tr><td>filter</td><td>'all'|'left'|'center'|'right'|'hot'</td><td>탭 필터</td></tr>
+        <tr><td>currentUserId</td><td>string | null</td><td>본인 글 구분용</td></tr>
+      </table>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><code>usePosts(districtId, filter)</code> 훅으로 React Query 무한스크롤 처리</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><code>IntersectionObserver</code>로 스크롤 끝 감지 → <code>fetchNextPage</code> 호출</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>차단 유저 게시글은 클라이언트에서 필터링 — <code>authStore</code>의 blockedIds 참조</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- useLocation -->
+  <div class="comp-card">
+    <div class="comp-header" style="border-top:3px solid var(--purple);">
+      <span class="comp-icon">📍</span>
+      <span class="comp-name">useLocation.ts</span>
+      <span class="badge badge-hook">Hook</span>
+    </div>
+    <div class="comp-body">
+      <div class="code-block"><span class="kw">export function</span> <span class="fn">useLocation</span>() {
+  <span class="kw">const</span> [status, setStatus] = useState&lt;
+    <span class="str">'idle'</span> | <span class="str">'loading'</span> | <span class="str">'verified'</span> | <span class="str">'error'</span>
+  &gt;(<span class="str">'idle'</span>)
+
+  <span class="kw">const</span> <span class="fn">verify</span> = <span class="kw">async</span> () => {
+    setStatus(<span class="str">'loading'</span>)
+    <span class="kw">const</span> coords = <span class="kw">await</span> <span class="fn">getGPS</span>()      <span class="cm">// Geolocation API</span>
+    <span class="kw">const</span> distId = <span class="fn">pointInDistrict</span>(   <span class="cm">// Turf.js</span>
+      coords, geoData
+    )
+    <span class="kw">await</span> api.<span class="fn">verifyLocation</span>(distId)   <span class="cm">// 서버 저장</span>
+    authStore.<span class="fn">setDistrict</span>(distId)
+    setStatus(<span class="str">'verified'</span>)
+  }
+
+  <span class="kw">return</span> { status, verify }
+}</div>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>인증 성공 시 <code>authStore.districtId</code> 업데이트 → 글쓰기 버튼 활성화</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>인증 만료 (30일) 체크는 <code>App.tsx</code> 마운트 시 자동 실행</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- mapStore -->
+  <div class="comp-card">
+    <div class="comp-header" style="border-top:3px solid var(--orange);">
+      <span class="comp-icon">🗄️</span>
+      <span class="comp-name">mapStore.ts</span>
+      <span class="badge badge-store">Zustand</span>
+    </div>
+    <div class="comp-body">
+      <div class="code-block"><span class="kw">interface</span> <span class="type-c">MapStore</span> {
+  <span class="cm">// 상태</span>
+  selectedDistrictId: <span class="type-c">string</span> | <span class="kw">null</span>
+  zoomLevel: <span class="str">'sido'</span> | <span class="str">'sigungu'</span>
+  districtStats: <span class="type-c">Record</span>&lt;<span class="type-c">string</span>, <span class="type-c">DistrictStats</span>&gt;
+  hoveredDistrictId: <span class="type-c">string</span> | <span class="kw">null</span>
+
+  <span class="cm">// 액션</span>
+  <span class="fn">selectDistrict</span>: (id: <span class="type-c">string</span>) => <span class="kw">void</span>
+  <span class="fn">setZoomLevel</span>: (level: <span class="type-c">ZoomLevel</span>) => <span class="kw">void</span>
+  <span class="fn">updateStats</span>: (stats: <span class="type-c">DistrictStats</span>[]) => <span class="kw">void</span>
+  <span class="fn">setHovered</span>: (id: <span class="type-c">string</span> | <span class="kw">null</span>) => <span class="kw">void</span>
+}</div>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><code>selectedDistrictId</code> 변경 → <code>SidePanel</code> + <code>PostList</code> 동시 반응</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><code>districtStats</code>는 앱 마운트 시 전체 로드 후 캐시 — 지도 색상 즉시 렌더링</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 데이터 흐름 ── -->
+<div class="section-title">데이터 흐름 — 지역구 클릭 시</div>
+<div class="comp-card" style="margin-bottom:0;">
+  <div class="comp-body">
+    <div class="flow-wrap">
+      <div class="flow-row">
+        <div class="flow-node fn-comp"><span class="fn-icon">🖱️</span><span class="fn-label">MapDistrict</span><span class="fn-sub">지역구 path 클릭</span></div>
+      </div>
+      <div class="flow-arrow">↓ onSelect(districtId)</div>
+      <div class="flow-row">
+        <div class="flow-node fn-store"><span class="fn-icon">🗄️</span><span class="fn-label">mapStore</span><span class="fn-sub">selectDistrict() 호출</span></div>
+      </div>
+      <div class="flow-arrow">↓ selectedDistrictId 변경 (구독 중인 컴포넌트 리렌더)</div>
+      <div class="flow-row">
+        <div class="flow-node fn-comp"><span class="fn-icon">📊</span><span class="fn-label">SidePanel</span><span class="fn-sub">DistrictHeader + StatsBar 갱신</span></div>
+        <div class="flow-arrow">+</div>
+        <div class="flow-node fn-hook"><span class="fn-icon">🔄</span><span class="fn-label">usePosts</span><span class="fn-sub">districtId 변경 → 새 쿼리</span></div>
+        <div class="flow-arrow">+</div>
+        <div class="flow-node fn-hook"><span class="fn-icon">📰</span><span class="fn-label">useNews</span><span class="fn-sub">지역 뉴스 fetch</span></div>
+      </div>
+      <div class="flow-arrow">↓ React Query 캐시 히트 시 즉시 / 미스 시 서버 요청</div>
+      <div class="flow-row">
+        <div class="flow-node fn-api"><span class="fn-icon">🌐</span><span class="fn-label">API Server</span><span class="fn-sub">GET /districts/:id/posts<br>GET /districts/:id/news</span></div>
+      </div>
+      <div class="flow-arrow">↓ 응답 → React Query 캐시 저장 (staleTime: 60s)</div>
+      <div class="flow-row">
+        <div class="flow-node fn-comp"><span class="fn-icon">📋</span><span class="fn-label">PostList + NewsItem</span><span class="fn-sub">렌더링 완료</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 레이어 의존성 ── -->
+<div class="section-title">레이어 의존성 규칙</div>
+<div class="dep-map">
+  <div class="dep-cell">
+    <div class="dep-layer">Pages</div>
+    <div class="dep-item hl">MapPage</div>
+    <div class="dep-item hl">DistrictPage</div>
+    <div class="dep-item hl">MyPage</div>
+    <div class="dep-item hl">LoginPage</div>
+  </div>
+  <div class="dep-cell">
+    <div class="dep-layer">Components</div>
+    <div class="dep-item hl">KoreaMap</div>
+    <div class="dep-item hl">SidePanel</div>
+    <div class="dep-item hl">PostList / PostItem</div>
+    <div class="dep-item hl">PostWriteBar</div>
+    <div class="dep-item hl">NewsTicker</div>
+  </div>
+  <div class="dep-cell">
+    <div class="dep-layer">Hooks / Store</div>
+    <div class="dep-item hl">useKoreaMap</div>
+    <div class="dep-item hl">usePosts / useNews</div>
+    <div class="dep-item hl">useLocation</div>
+    <div class="dep-item hl">mapStore</div>
+    <div class="dep-item hl">authStore</div>
+  </div>
+  <div class="dep-cell">
+    <div class="dep-layer">API / Utils / Types</div>
+    <div class="dep-item hl">api/client.ts</div>
+    <div class="dep-item hl">districtColor.ts</div>
+    <div class="dep-item hl">geoHelper.ts</div>
+    <div class="dep-item hl">types/*.ts</div>
+  </div>
+</div>
+<div style="margin-top:8px; font-size:11px; color:var(--text-faint);">
+  ▸ 의존 방향은 위 → 아래만 허용 — Pages는 Components를 쓰지만 역방향 import 금지<br>
+  ▸ Components는 Store를 직접 구독 가능 — 단, API 호출은 반드시 Hook을 통해서만
+</div>
+
+<!-- ── 네이밍 컨벤션 ── -->
+<div class="section-title">네이밍 컨벤션</div>
+<div class="comp-card">
+  <div class="comp-body" style="padding:0;">
+    <table class="conv-table">
+      <tr><th>대상</th><th>규칙</th><th>예시</th></tr>
+      <tr><td>컴포넌트 파일</td><td>PascalCase.tsx</td><td>KoreaMap.tsx, PostItem.tsx</td></tr>
+      <tr><td>커스텀 훅</td><td>use + PascalCase.ts</td><td>useDistrict.ts, usePostWrite.ts</td></tr>
+      <tr><td>Zustand 스토어</td><td>camelCase + Store.ts</td><td>mapStore.ts, authStore.ts</td></tr>
+      <tr><td>API 함수</td><td>동사 + 명사 (camelCase)</td><td>fetchPosts(), createPost(), deletePost()</td></tr>
+      <tr><td>타입/인터페이스</td><td>PascalCase (I 접두사 없음)</td><td>District, PostItem, AuthState</td></tr>
+      <tr><td>상수 / enum</td><td>UPPER_SNAKE_CASE</td><td>POLITICAL_LEAN, ZOOM_LEVEL</td></tr>
+      <tr><td>CSS 클래스 (Tailwind)</td><td>utility-first, 커스텀 클래스 금지</td><td>className="flex gap-2 text-sm"</td></tr>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

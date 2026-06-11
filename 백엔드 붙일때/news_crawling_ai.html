@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — 뉴스 크롤링 + AI 연동 구조</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --red: #C82020; --green: #2ECC71;
+  --orange: #E67E22; --purple: #8B5CF6; --teal: #14B8A6;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; padding: 24px; min-height: 100vh; }
+
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+
+.section-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 14px; margin-top: 28px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── PIPELINE FLOW ── */
+.pipeline {
+  display: flex; align-items: stretch; gap: 0;
+  margin-bottom: 8px; overflow-x: auto; padding-bottom: 4px;
+}
+.pipe-stage {
+  flex-shrink: 0; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; min-width: 170px;
+  position: relative;
+}
+.pipe-arrow {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 32px; color: var(--text-faint); font-size: 16px;
+}
+.pipe-num {
+  font-size: 9px; font-weight: 800; letter-spacing: .08em;
+  color: var(--text-faint); margin-bottom: 6px;
+}
+.pipe-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.pipe-sub { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.pipe-tag {
+  display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px;
+  border-radius: 10px; margin-top: 8px;
+}
+
+/* ── TWO COLUMN ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden;
+}
+.card-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700;
+}
+.card-icon { font-size: 15px; }
+.card-body { padding: 14px; }
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+  padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 11px;
+  color: #A8B4D0; line-height: 1.7; overflow-x: auto; margin-bottom: 10px;
+}
+.code-block .kw  { color: var(--purple); }
+.code-block .fn  { color: var(--accent); }
+.code-block .str { color: var(--green); }
+.code-block .cm  { color: var(--text-faint); font-style: italic; }
+.code-block .num { color: var(--orange); }
+
+/* ── LIST ITEMS ── */
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+.item { display: flex; gap: 9px; font-size: 12px; color: var(--text-dim); line-height: 1.55; }
+.item-dot { flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; }
+.item strong { color: var(--text); }
+.item code {
+  background: var(--surface2); color: var(--text); padding: 1px 5px;
+  border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px;
+}
+
+/* ── SCHEDULE TABLE ── */
+.sched-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sched-table th {
+  text-align: left; padding: 7px 12px; background: var(--surface2);
+  color: var(--text-dim); font-weight: 700; font-size: 10px; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.sched-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-dim); vertical-align: top;
+}
+.sched-table td:first-child { color: var(--text); font-weight: 600; font-family: 'Courier New', monospace; font-size: 11px; }
+.sched-table tr:last-child td { border-bottom: none; }
+.sched-table tr:hover td { background: var(--surface2); }
+
+/* ── PROMPT BOX ── */
+.prompt-box {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; margin-bottom: 12px;
+}
+.prompt-label {
+  font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.prompt-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.prompt-text {
+  font-size: 11px; color: var(--text-dim); line-height: 1.65;
+  white-space: pre-wrap; font-family: 'Courier New', monospace;
+}
+.prompt-text .hl { color: var(--accent); font-weight: 700; }
+.prompt-text .var { color: var(--purple); }
+
+/* ── FLOW DIAGRAM ── */
+.flow-wrap { position: relative; padding: 16px; }
+.flow-row { display: flex; justify-content: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.flow-node {
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  gap: 4px; padding: 10px 14px; border-radius: 8px; text-align: center;
+  font-size: 11px; font-weight: 600; min-width: 100px;
+  border: 1px solid var(--border);
+}
+.flow-node .fn-icon { font-size: 16px; }
+.flow-node .fn-label { font-size: 11px; font-weight: 700; }
+.flow-node .fn-sub { font-size: 9px; color: var(--text-dim); }
+.flow-down { text-align: center; color: var(--text-faint); font-size: 18px; margin: 2px 0; }
+.flow-or { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 10px; color: var(--text-faint); margin: 4px 0; }
+.flow-or::before, .flow-or::after { content:''; flex:1; max-width:60px; height:1px; background:var(--border); }
+
+/* color variants */
+.fn-crawler  { background: rgba(20,184,166,.1);  border-color: rgba(20,184,166,.3);  color: var(--teal); }
+.fn-ai       { background: rgba(139,92,246,.1);  border-color: rgba(139,92,246,.3);  color: var(--purple); }
+.fn-db       { background: rgba(43,114,200,.1);  border-color: rgba(43,114,200,.3);  color: var(--blue); }
+.fn-pass     { background: rgba(46,204,113,.1);  border-color: rgba(46,204,113,.3);  color: var(--green); }
+.fn-fail     { background: rgba(200,32,32,.1);   border-color: rgba(200,32,32,.3);   color: var(--red); }
+.fn-cache    { background: rgba(200,212,0,.1);   border-color: rgba(200,212,0,.3);   color: var(--accent); }
+.fn-neutral  { background: var(--surface2); }
+
+/* badge */
+.badge { display: inline-flex; align-items: center; font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 10px; letter-spacing: .04em; }
+.badge-teal   { background: rgba(20,184,166,.15);  color: var(--teal); }
+.badge-purple { background: rgba(139,92,246,.15);  color: var(--purple); }
+.badge-green  { background: rgba(46,204,113,.15);  color: var(--green); }
+.badge-orange { background: rgba(230,126,34,.15);  color: var(--orange); }
+.badge-accent { background: rgba(200,212,0,.15);   color: var(--accent); }
+
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<h1>지도<span>정치</span> — 뉴스 크롤링 + AI 연동 구조</h1>
+<p class="subtitle">Python Crawler → Claude API → PostgreSQL → React 프론트엔드</p>
+
+<!-- ── 전체 파이프라인 ── -->
+<div class="section-title">전체 파이프라인</div>
+<div class="pipeline">
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 01</div>
+    <div class="pipe-title">🕷️ 크롤러</div>
+    <div class="pipe-sub">RSS / 네이버 뉴스 API로 키워드 기반 기사 수집</div>
+    <span class="pipe-tag" style="background:rgba(20,184,166,.15);color:var(--teal)">Python</span>
+  </div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 02</div>
+    <div class="pipe-title">🧹 전처리</div>
+    <div class="pipe-sub">중복 제거(url_hash) · 본문 정제 · 지역 키워드 매칭</div>
+    <span class="pipe-tag" style="background:rgba(230,126,34,.15);color:var(--orange)">Python</span>
+  </div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 03</div>
+    <div class="pipe-title">🤖 Claude API</div>
+    <div class="pipe-sub">요약 · 지역 연관도 점수 · 정치 톤 분류</div>
+    <span class="pipe-tag" style="background:rgba(139,92,246,.15);color:var(--purple)">AI</span>
+  </div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 04</div>
+    <div class="pipe-title">💾 DB 저장</div>
+    <div class="pipe-sub">news_articles 테이블 upsert · 전국/지역 분류</div>
+    <span class="pipe-tag" style="background:rgba(43,114,200,.15);color:var(--blue)">PostgreSQL</span>
+  </div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 05</div>
+    <div class="pipe-title">⚡ 캐시 갱신</div>
+    <div class="pipe-sub">Redis에 지역구별 핫뉴스 캐싱 · 티커용 전국 Top5</div>
+    <span class="pipe-tag" style="background:rgba(200,212,0,.15);color:var(--accent)">Redis</span>
+  </div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-stage">
+    <div class="pipe-num">STEP 06</div>
+    <div class="pipe-title">🖥️ 프론트</div>
+    <div class="pipe-sub">지도 말풍선 · 상단 티커 · 사이드 패널 뉴스 표시</div>
+    <span class="pipe-tag" style="background:rgba(43,114,200,.15);color:var(--blue)">React</span>
+  </div>
+</div>
+
+<!-- ── 크롤러 + AI 상세 ── -->
+<div class="section-title">크롤러 상세</div>
+<div class="two-col">
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--teal);">
+      <span class="card-icon">🕷️</span>수집 소스 & 키워드 전략
+    </div>
+    <div class="card-body">
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>네이버 뉴스 검색 API</strong> — 지역구명 + 정치 키워드 조합 쿼리<br><code>"종로구 예산"</code> <code>"마포구 재개발"</code> <code>"수성구 의원"</code></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>RSS 피드</strong> — 주요 언론사 지역판 (한겨레·조선·중앙·경향 지역 섹션)</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>전국 뉴스</strong> — 국회·여야·정책 키워드로 별도 수집 → <code>is_national = true</code></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><strong>중복 방지</strong> — URL을 SHA-256 해시 → <code>url_hash</code> UNIQUE 체크 후 skip</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><strong>수집 주기</strong> — 전국 뉴스 <code>30분</code> / 지역 뉴스 <code>2시간</code> / Celery Beat 스케줄러</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--orange);">
+      <span class="card-icon">🧹</span>전처리 로직
+    </div>
+    <div class="card-body">
+      <div class="code-block"><span class="kw">def</span> <span class="fn">preprocess_article</span>(raw):
+    <span class="cm"># 1. HTML 태그 제거</span>
+    text = strip_html(raw[<span class="str">'content'</span>])
+
+    <span class="cm"># 2. 지역 키워드 매칭</span>
+    district_id = <span class="fn">match_district</span>(
+        raw[<span class="str">'title'</span>] + text,
+        districts_index   <span class="cm"># 지역명 역색인</span>
+    )
+
+    <span class="cm"># 3. 최소 길이 필터 (200자 미만 skip)</span>
+    <span class="kw">if</span> len(text) &lt; <span class="num">200</span>:
+        <span class="kw">return</span> <span class="kw">None</span>
+
+    <span class="cm"># 4. url_hash 생성</span>
+    url_hash = sha256(raw[<span class="str">'url'</span>])
+
+    <span class="kw">return</span> {
+        <span class="str">'district_id'</span>: district_id,
+        <span class="str">'url_hash'</span>: url_hash,
+        <span class="str">'content'</span>: text[:<span class="num">3000</span>]  <span class="cm"># 토큰 절약</span>
+    }</div>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>지역명 역색인: <code>{"종로구": "11110", "마포구": "11440"...}</code> 딕셔너리로 O(1) 매칭</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>매칭 실패 시 <code>district_id = NULL</code> → 전국 뉴스로 분류</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Claude API 프롬프트 ── -->
+<div class="section-title">Claude API — 프롬프트 설계</div>
+<div class="two-col">
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--purple);">
+      <span class="card-icon">🤖</span>뉴스 분석 프롬프트
+      <span class="badge badge-purple" style="margin-left:auto">claude-haiku</span>
+    </div>
+    <div class="card-body">
+      <div class="prompt-box">
+        <div class="prompt-label" style="--dot-color:var(--purple)">SYSTEM PROMPT</div>
+        <div class="prompt-text">당신은 한국 정치 뉴스 분석 AI입니다.
+반드시 JSON만 반환하세요. 다른 텍스트 없이.</div>
+      </div>
+      <div class="prompt-box">
+        <div class="prompt-label">USER PROMPT</div>
+        <div class="prompt-text">다음 기사를 분석해 JSON으로 반환하세요.
+
+<span class="hl">지역구:</span> <span class="var">{district_name}</span>
+<span class="hl">제목:</span> <span class="var">{title}</span>
+<span class="hl">본문:</span> <span class="var">{content[:2000]}</span>
+
+반환 형식:
+{
+  <span class="hl">"summary"</span>: "2~3줄 핵심 요약 (말풍선용)",
+  <span class="hl">"relevance_score"</span>: 0.0~1.0,  // 지역 연관도
+  <span class="hl">"political_tone"</span>: "neutral|left|right",
+  <span class="hl">"is_national"</span>: true|false,
+  <span class="hl">"keywords"</span>: ["키워드1", "키워드2"]
+}</div>
+      </div>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>속도·비용 최적화로 <strong>Haiku 모델</strong> 사용 — 요약/분류 태스크에 충분</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><code>relevance_score &lt; 0.4</code> 이면 저장 skip — 노이즈 필터</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--red);">
+      <span class="card-icon">🛡️</span>게시글 어뷰징 판단 프롬프트
+      <span class="badge badge-purple" style="margin-left:auto">claude-haiku</span>
+    </div>
+    <div class="card-body">
+      <div class="prompt-box">
+        <div class="prompt-label">SYSTEM PROMPT</div>
+        <div class="prompt-text">당신은 정치 커뮤니티 게시글 품질 판단 AI입니다.
+반드시 JSON만 반환하세요.</div>
+      </div>
+      <div class="prompt-box">
+        <div class="prompt-label">USER PROMPT</div>
+        <div class="prompt-text">다음 게시글의 품질을 판단하세요.
+
+<span class="hl">정치색:</span> <span class="var">{political_lean}</span>
+<span class="hl">지역구:</span> <span class="var">{district_name}</span>
+<span class="hl">내용:</span> <span class="var">{content}</span>
+
+판단 기준:
+- 해당 지역구 현안과 관련 있는가
+- 의미있는 의견/논거가 있는가
+- 혐오·욕설·도배가 없는가
+
+반환 형식:
+{
+  <span class="hl">"score"</span>: 0.0~1.0,   // 품질 점수
+  <span class="hl">"pass"</span>: true|false, // 0.5 이상이면 true
+  <span class="hl">"reason"</span>: "low_quality|hate_speech|spam|ok"
+}</div>
+      </div>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--red)"></div><div><code>pass: false</code> → <code>posts.status = "pending"</code> + 관리자 큐</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--red)"></div><div><code>score</code>는 DB에 저장 → 추후 ML 학습 데이터로 활용 가능</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 처리 흐름도 ── -->
+<div class="section-title">게시글 등록 흐름 (AI 필터 포함)</div>
+<div class="card">
+  <div class="card-body">
+    <div class="flow-wrap">
+      <div class="flow-row">
+        <div class="flow-node fn-neutral"><span class="fn-icon">👤</span><span class="fn-label">유저 작성</span><span class="fn-sub">정치색 선택 + 텍스트</span></div>
+      </div>
+      <div class="flow-down">↓</div>
+      <div class="flow-row">
+        <div class="flow-node fn-neutral"><span class="fn-icon">📍</span><span class="fn-label">위치 인증 확인</span><span class="fn-sub">users.location_verified 체크</span></div>
+      </div>
+      <div class="flow-down">↓</div>
+      <div class="flow-row">
+        <div class="flow-node fn-ai"><span class="fn-icon">🤖</span><span class="fn-label">Claude API 호출</span><span class="fn-sub">품질 점수 + 사유 반환</span></div>
+      </div>
+      <div class="flow-down">↓</div>
+      <div class="flow-row">
+        <div class="flow-node fn-pass"><span class="fn-icon">✅</span><span class="fn-label">score ≥ 0.5</span><span class="fn-sub">status = active</span></div>
+        <div style="display:flex;align-items:center;padding:0 12px;color:var(--text-faint);font-size:11px;">또는</div>
+        <div class="flow-node fn-fail"><span class="fn-icon">🚫</span><span class="fn-label">score &lt; 0.5</span><span class="fn-sub">status = pending</span></div>
+      </div>
+      <div class="flow-down">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓</div>
+      <div class="flow-row">
+        <div class="flow-node fn-cache"><span class="fn-icon">⚡</span><span class="fn-label">districts 통계 갱신</span><span class="fn-sub">stat_left/right/center +1</span></div>
+        <div style="display:flex;align-items:center;padding:0 12px;color:var(--text-faint);font-size:11px;">&nbsp;</div>
+        <div class="flow-node fn-neutral"><span class="fn-icon">🔔</span><span class="fn-label">관리자 큐 적재</span><span class="fn-sub">moderation_log 기록</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 스케줄러 ── -->
+<div class="section-title">Celery 스케줄러 — 크롤링 주기</div>
+<div class="card">
+  <div class="card-body" style="padding:0;">
+    <table class="sched-table">
+      <tr>
+        <th>Task</th><th>주기</th><th>설명</th><th>예상 API 호출</th>
+      </tr>
+      <tr>
+        <td>crawl_national_news</td>
+        <td><span class="badge badge-orange">30분</span></td>
+        <td>전국 정치 뉴스 수집 → Claude 분석 → 티커 캐시 갱신</td>
+        <td>~20 calls/회</td>
+      </tr>
+      <tr>
+        <td>crawl_district_news</td>
+        <td><span class="badge badge-accent">2시간</span></td>
+        <td>250개 지역구별 뉴스 수집 (배치, 병렬 처리)</td>
+        <td>~500 calls/회</td>
+      </tr>
+      <tr>
+        <td>refresh_district_stats</td>
+        <td><span class="badge badge-green">5분</span></td>
+        <td>districts.stat_* 캐시 컬럼 재계산 + Redis 갱신</td>
+        <td>DB only</td>
+      </tr>
+      <tr>
+        <td>process_pending_posts</td>
+        <td><span class="badge badge-orange">10분</span></td>
+        <td>pending 상태 게시글 재검토 알림 → 관리자 대시보드</td>
+        <td>DB only</td>
+      </tr>
+      <tr>
+        <td>cleanup_old_news</td>
+        <td><span class="badge badge-accent">1일</span></td>
+        <td>7일 이상 된 지역 뉴스 soft delete (전국 뉴스는 30일 보관)</td>
+        <td>DB only</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ── 기술 스택 상세 ── -->
+<div class="section-title">기술 스택 상세</div>
+<div class="three-col">
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--teal);">
+      <span class="card-icon">🕷️</span>크롤러 스택
+    </div>
+    <div class="card-body">
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>httpx + BeautifulSoup4</strong> — 비동기 HTTP + HTML 파싱</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>feedparser</strong> — RSS/Atom 피드 파싱</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>Celery + Redis</strong> — 분산 태스크 큐 + 브로커</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div><strong>네이버 뉴스 검색 API</strong> — 키워드별 최신 기사 100건</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><strong>Rate limit</strong> 고려 — 네이버 API 25,000 calls/일 상한</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--purple);">
+      <span class="card-icon">🤖</span>AI 스택
+    </div>
+    <div class="card-body">
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>Claude Haiku</strong> — 뉴스 요약·분류, 게시글 품질 판단 (비용 최소화)</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>Anthropic Python SDK</strong> — <code>anthropic.Anthropic()</code></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>배치 처리</strong> — 뉴스 5건씩 묶어 1회 API 호출로 처리 (비용 절감)</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>JSON mode</strong> — 구조화된 응답 강제, 파싱 오류 최소화</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div><strong>Fallback</strong> — API 오류 시 제목만 저장 + 재처리 큐 적재</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="border-top:3px solid var(--blue);">
+      <span class="card-icon">💾</span>저장 & 캐시
+    </div>
+    <div class="card-body">
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>PostgreSQL</strong> — 뉴스·게시글 영구 저장, GeoJSON 경계 데이터</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>Redis</strong> — 지역구별 Top3 뉴스 캐시, 전국 티커 Top5, TTL 30분</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>Redis 캐시 키 구조</strong><br><code>news:national:top5</code><br><code>news:district:{id}:top3</code><br><code>stats:district:{id}</code></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--green)"></div><div><strong>캐시 무효화</strong> — 새 뉴스 저장 시 해당 지역 캐시 자동 만료</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 비용 추정 ── -->
+<div class="section-title">Claude API 비용 추정</div>
+<div class="card">
+  <div class="card-body" style="padding:0;">
+    <table class="sched-table">
+      <tr><th>항목</th><th>일 호출수</th><th>평균 토큰/회</th><th>일 비용 (Haiku 기준)</th><th>비고</th></tr>
+      <tr>
+        <td>전국 뉴스 분석</td><td>~960회</td><td>~800 tok</td>
+        <td><span class="badge badge-green">~$0.04</span></td>
+        <td>30분 × 48회 × 20건</td>
+      </tr>
+      <tr>
+        <td>지역 뉴스 분석</td><td>~6,000회</td><td>~800 tok</td>
+        <td><span class="badge badge-accent">~$0.24</span></td>
+        <td>12회/일 × 500건</td>
+      </tr>
+      <tr>
+        <td>게시글 어뷰징 판단</td><td>~500회</td><td>~400 tok</td>
+        <td><span class="badge badge-green">~$0.01</span></td>
+        <td>DAU 기준 추정</td>
+      </tr>
+      <tr style="background:rgba(200,212,0,.05);">
+        <td><strong>합계</strong></td><td>~7,460회</td><td>—</td>
+        <td><strong style="color:var(--accent)">~$0.29/일</strong></td>
+        <td><strong>월 ~$9 수준</strong></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

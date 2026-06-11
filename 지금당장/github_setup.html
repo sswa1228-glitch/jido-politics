@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!-- 지도정치 GitHub 형상관리 설정 가이드 v1.0 | 2026-06-11 -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — GitHub 형상관리 설정</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --green: #2ECC71; --orange: #E67E22;
+  --purple: #8B5CF6; --red: #C82020;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', monospace; padding: 24px; min-height: 100vh; }
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+.section-title { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; margin-top: 32px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+.card h3 { font-size: 13px; font-weight: 800; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+.card p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+pre { background: #0A0C10; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 11px; color: #A8B4D0; overflow-x: auto; line-height: 1.7; margin: 10px 0; font-family: 'Courier New', monospace; }
+.cmd { color: var(--accent); }
+.cmt { color: var(--text-faint); }
+.str { color: #98C379; }
+.kw { color: #C678DD; }
+.tag { display:inline-block; font-size:9px; font-weight:900; padding:2px 7px; border-radius:5px; letter-spacing:.06em; }
+.tag-now { background:rgba(200,212,0,.15); color:var(--accent); }
+.tag-branch { background:rgba(43,114,200,.15); color:#5B9BD5; }
+.tag-feat { background:rgba(139,92,246,.15); color:#A78BFA; }
+.tag-done { background:rgba(46,204,113,.12); color:var(--green); }
+.branch-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px; }
+@media(max-width:700px){ .branch-grid{ grid-template-columns:1fr; } }
+.branch-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+.branch-card h4 { font-size:12px; font-weight:800; margin-bottom:4px; }
+.branch-card p { font-size:11px; color:var(--text-dim); }
+.commit-row { display:flex; gap:10px; align-items:baseline; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.commit-row:last-child { border-bottom:none; }
+.commit-type { font-size:10px; font-weight:900; width:60px; flex-shrink:0; font-family:'Courier New'; }
+.commit-desc { font-size:11px; color:var(--text-dim); }
+.ver-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:14px; }
+@media(max-width:700px){ .ver-grid{ grid-template-columns:1fr 1fr; } }
+.ver-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; text-align:center; }
+.ver-card .ver-num { font-size:16px; font-weight:900; font-family:'Courier New'; color:var(--accent); }
+.ver-card .ver-label { font-size:10px; color:var(--text-dim); margin-top:3px; }
+.flow { display:flex; align-items:center; gap:0; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; }
+.flow-step { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; flex-shrink:0; min-width:140px; }
+.flow-step h4 { font-size:11px; font-weight:800; margin-bottom:3px; }
+.flow-step p { font-size:10px; color:var(--text-dim); }
+.flow-arrow { color:var(--text-faint); font-size:18px; padding:0 6px; flex-shrink:0; }
+.dir-tree { background:#0A0C10; border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-family:'Courier New',monospace; font-size:11px; line-height:1.9; }
+.dir-green { color:var(--accent); font-weight:700; }
+.dir-blue { color:#7BAED4; }
+.dir-dim { color:var(--text-faint); }
+.dir-white { color:var(--text); }
+</style>
+</head>
+<body>
+<h1>지도 정치 — <span>GitHub 형상관리</span> 설정 가이드</h1>
+<p class="subtitle">v1.0 · 2026-06-11 · base: v1.2.0 프로토타입</p>
+
+<!-- ── 레포 구조 ── -->
+<p class="section-title">📁 레포지토리 구조</p>
+<div class="dir-tree">
+<div><span class="dir-green">jido-politics/</span> <span class="dir-dim"># GitHub 레포 루트 (지도정치 → jido-politics)</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-green">prototype/</span> <span class="dir-dim"># 단일 HTML 프로토타입</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; └── </span><span class="dir-blue">지도정치_v1.2.0.html</span> <span class="dir-dim"># 현재 작동 버전 ← HERE</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-green">docs/</span> <span class="dir-dim"># 기획 문서 (HTML)</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; ├── </span><span class="dir-blue">roadmap_v2.1.html</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; ├── </span><span class="dir-blue">db_schema_v1.2.html</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; ├── </span><span class="dir-blue">react_structure_v1.2.html</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; ├── </span><span class="dir-blue">api_endpoints_v1.2.html</span></div>
+<div><span class="dir-dim">│&nbsp;&nbsp; └── </span><span class="dir-blue">news_crawling_ai_v1.2.html</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-green">frontend/</span> <span class="dir-dim"># (추후) React 앱</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-green">backend/</span> <span class="dir-dim"># (추후) FastAPI 앱</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-white">CHANGELOG.md</span> <span class="dir-dim"># 버전별 변경 이력</span></div>
+<div><span class="dir-dim">├── </span><span class="dir-white">README.md</span></div>
+<div><span class="dir-dim">└── </span><span class="dir-white">.gitignore</span></div>
+</div>
+
+<!-- ── 브랜치 전략 ── -->
+<p class="section-title">🌿 브랜치 전략</p>
+<div class="branch-grid">
+  <div class="branch-card">
+    <h4 style="color:var(--green)">main</h4>
+    <p>항상 배포 가능한 상태. PR merge만 허용. 태그 = 버전 릴리즈.</p>
+  </div>
+  <div class="branch-card">
+    <h4 style="color:#5B9BD5">develop</h4>
+    <p>개발 통합 브랜치. feature/* 브랜치가 여기로 merge. CI 통과 후 main에 PR.</p>
+  </div>
+  <div class="branch-card">
+    <h4 style="color:#A78BFA">feature/*, fix/*</h4>
+    <p>기능 단위 브랜치. 예: <code>feature/comment-system</code> <code>fix/map-loader</code></p>
+  </div>
+</div>
+
+<!-- ── 커밋 컨벤션 ── -->
+<p class="section-title">📝 커밋 컨벤션 (Conventional Commits)</p>
+<div class="card">
+  <h3>형식: <code style="color:var(--accent)">type(scope): 설명</code></h3>
+  <div style="margin-top:10px;">
+    <div class="commit-row"><span class="commit-type" style="color:var(--green)">feat</span><span class="commit-desc">새 기능 추가 — feat(map): 드릴다운 애니메이션 추가</span></div>
+    <div class="commit-row"><span class="commit-type" style="color:var(--red)">fix</span><span class="commit-desc">버그 수정 — fix(loader): map-loader CSS display:none 기본값 수정</span></div>
+    <div class="commit-row"><span class="commit-type" style="color:#5B9BD5">docs</span><span class="commit-desc">문서 변경 — docs: roadmap_v2.1 업데이트</span></div>
+    <div class="commit-row"><span class="commit-type" style="color:var(--orange)">refactor</span><span class="commit-desc">기능 변경 없는 코드 개선</span></div>
+    <div class="commit-row"><span class="commit-type" style="color:#A78BFA">chore</span><span class="commit-desc">빌드/설정 변경 — chore: vite 설정 추가</span></div>
+    <div class="commit-row"><span class="commit-type" style="color:#14B8A6">style</span><span class="commit-desc">CSS·포맷 변경 (기능 무관)</span></div>
+  </div>
+</div>
+
+<!-- ── 버전 관리 ── -->
+<p class="section-title">🏷️ 버전 관리 (Semantic Versioning)</p>
+<div class="ver-grid">
+  <div class="ver-card"><div class="ver-num">v1.x.0</div><div class="ver-label">MAJOR<br>아키텍처 변경<br>(HTML→React)</div></div>
+  <div class="ver-card"><div class="ver-num">v1.2.x</div><div class="ver-label">MINOR<br>기능 추가<br>(현재 단계)</div></div>
+  <div class="ver-card"><div class="ver-num">v1.2.0</div><div class="ver-label" style="color:var(--green)">현재 버전<br>프로토타입 완성</div></div>
+  <div class="ver-card"><div class="ver-num">v2.0.0</div><div class="ver-label">React + FastAPI<br>백엔드 연동 완성</div></div>
+</div>
+
+<!-- ── 초기 셋업 커맨드 ── -->
+<p class="section-title">⚡ 초기 셋업 커맨드</p>
+<pre><span class="cmt"># 1. GitHub에서 새 레포 생성 후 (jido-politics 권장)</span>
+<span class="cmd">cd</span> <span class="str">"/Users/dongkyu/Desktop/07. 지도정치"</span>
+<span class="cmd">git init</span>
+<span class="cmd">git remote add origin</span> https://github.com/<span class="str">sswa1228-glitch</span>/jido-politics.git
+
+<span class="cmt"># 2. 폴더 구조 정리</span>
+<span class="cmd">mkdir</span> prototype docs
+<span class="cmd">cp</span> 지금당장/지도정치_v1.2.0.html prototype/
+<span class="cmd">cp</span> 백엔드\ 붙일때/roadmap_v2.1.html docs/
+<span class="cmd">cp</span> React\ 포팅\ 시작할때/db_schema_v1.2.html docs/
+<span class="cmd">cp</span> React\ 포팅\ 시작할때/react_structure_v1.2.html docs/
+<span class="cmd">cp</span> 지금당장/api_endpoints_v1.2.html docs/
+<span class="cmd">cp</span> 백엔드\ 붙일때/news_crawling_ai_v1.2.html docs/
+
+<span class="cmt"># 3. .gitignore</span>
+<span class="cmd">echo</span> <span class="str">".DS_Store
+*.DS_Store
+node_modules/
+.env
+__pycache__/"</span> > .gitignore
+
+<span class="cmt"># 4. README.md</span>
+<span class="cmd">echo</span> <span class="str">"# 로컬보이스 (지도정치)
+로컬 정치 지도 커뮤니티 — v1.2.0"</span> > README.md
+
+<span class="cmt"># 5. CHANGELOG.md</span>
+<span class="cmd">cat</span> > CHANGELOG.md <span class="str">&lt;&lt;EOF
+# CHANGELOG
+
+## [v1.2.0] - 2026-06-11
+### Fixed
+- map-loader-wrap CSS display:none 기본값 수정 (스피너 초기 표시 버그)
+
+## [v1.1.2] - 2026-06 (Gemini 생성 원본)
+### Added
+- D3.js + TopoJSON 시맨틱 줌 (시도 ↔ 시군구)
+- 드릴다운 2단계, 위치 기반 권한, Reddit Hot Score 정렬
+- 반응형 레이아웃 (데스크탑/모바일)
+EOF</span>
+
+<span class="cmt"># 6. 첫 커밋</span>
+<span class="cmd">git add</span> .
+<span class="cmd">git commit</span> -m <span class="str">"feat: v1.2.0 프로토타입 초기 커밋 — 지도 렌더링 버그 수정"</span>
+<span class="cmd">git branch</span> -M main
+<span class="cmd">git push</span> -u origin main
+
+<span class="cmt"># 7. develop 브랜치 생성</span>
+<span class="cmd">git checkout</span> -b develop
+<span class="cmd">git push</span> -u origin develop</pre>
+
+<!-- ── GitHub Pages 배포 ── -->
+<p class="section-title">🌐 GitHub Pages 즉시 배포 (무료)</p>
+<div class="card">
+  <h3>🚀 지금 바로 퍼블리싱 가능 <span class="tag tag-now">무료</span></h3>
+  <p style="margin-bottom:10px;">GitHub Pages는 정적 HTML을 그대로 서빙. 추가 설정 없이 v1.2.0 즉시 공개 가능.</p>
+  <pre><span class="cmt"># prototype/index.html로 복사 (Pages 기본 진입점)</span>
+<span class="cmd">cp</span> prototype/지도정치_v1.2.0.html prototype/index.html
+<span class="cmd">git add</span> . && <span class="cmd">git commit</span> -m <span class="str">"chore: GitHub Pages index.html 추가"</span>
+<span class="cmd">git push</span></pre>
+  <p style="margin-top:8px;">GitHub 레포 → Settings → Pages → Source: <strong>main</strong> 브랜치 <strong>/prototype</strong> 폴더 선택 → Save</p>
+  <p style="margin-top:4px;">URL: <code style="color:var(--accent)">https://sswa1228-glitch.github.io/jido-politics/</code></p>
+</div>
+
+<div class="card" style="border-color:rgba(139,92,246,.3);">
+  <h3>⚡ Vercel 배포 (대안, 더 빠름) <span class="tag" style="background:rgba(139,92,246,.15);color:#A78BFA;">권장</span></h3>
+  <p style="margin-bottom:8px;">Vercel은 GitHub 연동 자동 배포 + 커스텀 도메인 + HTTPS 무료.</p>
+  <pre><span class="cmt"># Vercel CLI로 배포</span>
+<span class="cmd">npm i -g vercel</span>
+<span class="cmd">cd</span> prototype/
+<span class="cmd">vercel</span>  <span class="cmt"># 첫 실행 시 GitHub 연동 + 자동 설정</span></pre>
+  <p>이후 <code>git push</code>만 하면 자동으로 프리뷰 URL 생성 + main merge 시 프로덕션 배포.</p>
+</div>
+
+<!-- ── 워크플로우 ── -->
+<p class="section-title">🔄 일반 개발 워크플로우</p>
+<div class="flow">
+  <div class="flow-step"><h4 style="color:#A78BFA">feature 브랜치</h4><p>git checkout -b feature/xxx</p></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><h4 style="color:var(--text)">작업 + 커밋</h4><p>feat: ... / fix: ...</p></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><h4 style="color:#5B9BD5">develop PR</h4><p>코드 리뷰 후 merge</p></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><h4 style="color:var(--green)">main PR</h4><p>버전 태그 + 배포</p></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><h4 style="color:var(--accent)">git tag v1.x.x</h4><p>릴리즈 + CHANGELOG 업데이트</p></div>
+</div>
+
+<!-- ── 다음 단계 ── -->
+<p class="section-title">✅ 다음 단계 체크리스트</p>
+<div class="card">
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+      <input type="checkbox"> <span>GitHub 레포 생성 (public 또는 private)</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+      <input type="checkbox"> <span>위 초기 셋업 커맨드 실행 + 첫 push</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+      <input type="checkbox"> <span>GitHub Pages 또는 Vercel 배포 설정</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+      <input type="checkbox"> <span>v1.2.0 URL 공유 가능 확인</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+      <input type="checkbox"> <span>Vite + React 18 프로젝트 scaffold (feature/react-port 브랜치)</span>
+    </label>
+  </div>
+</div>
+
+</body>
+</html>

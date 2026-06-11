@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<!-- 지도정치 API 엔드포인트 정의 v1.2 | 2026-06-11 -->
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — API 엔드포인트 정의 v1.2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --red: #C82020; --green: #2ECC71;
+  --orange: #E67E22; --purple: #8B5CF6; --teal: #14B8A6; --pink: #EC4899;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+  /* HTTP method colors */
+  --get:    #2ECC71; --get-bg:    rgba(46,204,113,.12);
+  --post:   #2B72C8; --post-bg:   rgba(43,114,200,.12);
+  --patch:  #E67E22; --patch-bg:  rgba(230,126,34,.12);
+  --delete: #C82020; --delete-bg: rgba(200,32,32,.12);
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; padding: 24px; min-height: 100vh; }
+
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+
+.section-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 14px; margin-top: 28px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── METHOD BADGE ── */
+.method {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 5px;
+  letter-spacing: .06em; min-width: 56px; flex-shrink: 0; font-family: 'Courier New', monospace;
+}
+.GET    { background: var(--get-bg);    color: var(--get);    }
+.POST   { background: var(--post-bg);   color: var(--post);   }
+.PATCH  { background: var(--patch-bg);  color: var(--patch);  }
+.DELETE { background: var(--delete-bg); color: var(--delete); }
+
+/* ── AUTH BADGE ── */
+.auth-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  letter-spacing: .04em; white-space: nowrap; flex-shrink: 0;
+}
+.auth-pub   { background: rgba(46,204,113,.1);  color: var(--green);  }
+.auth-user  { background: rgba(43,114,200,.1);  color: var(--blue);   }
+.auth-loc   { background: rgba(139,92,246,.1);  color: var(--purple); }
+.auth-admin { background: rgba(200,32,32,.1);   color: var(--red);    }
+
+/* ── ENDPOINT GROUP ── */
+.ep-group {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; margin-bottom: 16px;
+}
+.ep-group-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; border-bottom: 2px solid var(--border);
+  font-size: 13px; font-weight: 700;
+}
+.ep-group-icon { font-size: 16px; }
+.ep-group-base { font-family: 'Courier New', monospace; color: var(--accent); font-size: 13px; }
+.ep-group-desc { font-size: 11px; color: var(--text-dim); margin-left: 4px; }
+
+/* ── ENDPOINT ROW ── */
+.ep-row {
+  border-bottom: 1px solid var(--border); padding: 11px 16px;
+  display: grid; grid-template-columns: 60px 1fr auto;
+  gap: 10px; align-items: start;
+  transition: background .1s; cursor: default;
+}
+.ep-row:last-child { border-bottom: none; }
+.ep-row:hover { background: var(--surface2); }
+.ep-row.expanded { background: var(--surface2); }
+
+.ep-path { font-family: 'Courier New', monospace; font-size: 12px; color: var(--text); font-weight: 600; }
+.ep-path .param { color: var(--purple); }
+.ep-desc { font-size: 11px; color: var(--text-dim); margin-top: 3px; line-height: 1.5; }
+.ep-tags { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 5px; }
+
+.ep-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+/* ── DETAIL PANEL ── */
+.ep-detail {
+  padding: 12px 16px 14px; background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+@media (max-width: 800px) { .ep-detail { grid-template-columns: 1fr; } }
+.detail-section { }
+.detail-label {
+  font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 7px;
+}
+.code-block {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; font-family: 'Courier New', monospace; font-size: 10px;
+  color: #A8B4D0; line-height: 1.75; overflow-x: auto;
+}
+.kw  { color: var(--purple); }
+.str { color: var(--green); }
+.num { color: var(--orange); }
+.cm  { color: var(--text-faint); font-style: italic; }
+.key { color: var(--accent); }
+.type-c { color: var(--pink); }
+
+/* ── BADGE small ── */
+.tag {
+  display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 6px;
+  border-radius: 4px; letter-spacing: .04em;
+}
+.tag-cache  { background: rgba(200,212,0,.12); color: var(--accent); }
+.tag-paginate { background: rgba(20,184,166,.12); color: var(--teal); }
+.tag-ai     { background: rgba(139,92,246,.12); color: var(--purple); }
+.tag-rt     { background: rgba(200,32,32,.1);  color: var(--red); }
+.tag-geo    { background: rgba(46,204,113,.12); color: var(--green); }
+
+/* ── SUMMARY TABLE ── */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.summary-cell { background: var(--surface); padding: 14px 16px; }
+.summary-num  { font-size: 28px; font-weight: 800; font-family: 'Courier New', monospace; line-height: 1; }
+.summary-lbl  { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+@media (max-width: 700px) { .summary-grid { grid-template-columns: repeat(2,1fr); } }
+
+/* ── AUTH FLOW ── */
+.auth-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); padding: 12px 16px; background: var(--surface2); border-radius: 8px; margin-bottom: 14px; }
+.auth-flow .step { background: var(--surface); border: 1px solid var(--border); padding: 4px 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 10px; color: var(--text); }
+.auth-flow .arrow { color: var(--text-faint); }
+
+/* ── RATE LIMIT TABLE ── */
+.rl-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.rl-table th { text-align: left; padding: 7px 12px; background: var(--surface2); color: var(--text-dim); font-weight: 700; font-size: 10px; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.rl-table td { padding: 8px 12px; border-bottom: 1px solid rgba(42,47,62,.5); color: var(--text-dim); }
+.rl-table td:first-child { color: var(--text); font-family: 'Courier New', monospace; font-size: 11px; }
+.rl-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+  <!-- v1.2 현재 상태 배너 -->
+  <div style="background:rgba(200,212,0,.08);border:1px solid rgba(200,212,0,.25);border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:11px;display:flex;align-items:center;gap:12px;">
+    <span style="background:rgba(200,212,0,.2);color:#C8D400;font-size:9px;font-weight:900;padding:3px 8px;border-radius:5px;white-space:nowrap;">BASE v1.2.0</span>
+    <span style="color:#7A8099;">현재 프로토타입 기준 (단일 HTML, 목업 데이터). 이 문서는 React + 백엔드 전환 시 기준 스펙입니다.</span>
+    <span style="margin-left:auto;color:#3D4257;white-space:nowrap;">2026-06-11</span>
+  </div>
+
+<h1>지도<span>정치</span> — API 엔드포인트 정의</h1>
+<p class="subtitle">FastAPI (Python) · REST · JWT 인증 · Base URL: /api/v1 · <span style="color:#C8D400;">base: v1.2.0</span> · 2026-06-11</p>
+
+<!-- ── 요약 ── -->
+<div class="summary-grid">
+  <div class="summary-cell">
+    <div class="summary-num" style="color:var(--get)">18</div>
+    <div class="summary-lbl">GET 엔드포인트</div>
+  </div>
+  <div class="summary-cell">
+    <div class="summary-num" style="color:var(--post)">8</div>
+    <div class="summary-lbl">POST 엔드포인트</div>
+  </div>
+  <div class="summary-cell">
+    <div class="summary-num" style="color:var(--patch)">4</div>
+    <div class="summary-lbl">PATCH 엔드포인트</div>
+  </div>
+  <div class="summary-cell">
+    <div class="summary-num" style="color:var(--delete)">4</div>
+    <div class="summary-lbl">DELETE 엔드포인트</div>
+  </div>
+</div>
+
+<!-- ── 인증 흐름 ── -->
+<div class="section-title">인증 방식</div>
+<div class="auth-flow">
+  <span class="step">POST /auth/login</span>
+  <span class="arrow">→</span>
+  <span>access_token (15분) + refresh_token (30일) 발급</span>
+  <span class="arrow">→</span>
+  <span class="step">Authorization: Bearer {token}</span>
+  <span class="arrow">→</span>
+  <span>만료 시 <span style="font-family:monospace; color:var(--accent)">POST /auth/refresh</span> 로 갱신</span>
+</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
+  <span class="auth-badge auth-pub">🌐 PUBLIC — 비회원 접근 가능</span>
+  <span class="auth-badge auth-user">🔐 USER — JWT 필수</span>
+  <span class="auth-badge auth-loc">📍 LOC — JWT + 위치 인증 필수</span>
+  <span class="auth-badge auth-admin">🛡️ ADMIN — 관리자 권한 필수</span>
+</div>
+
+<!-- ── AUTH ── -->
+<div class="section-title">인증 · 계정 /auth</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">🔐</span>
+    <span class="ep-group-base">/api/v1/auth</span>
+    <span class="ep-group-desc">회원가입 · 로그인 · 토큰 관리</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/auth/signup</div>
+      <div class="ep-desc">이메일 회원가입. 닉네임·이메일·비밀번호·정치색 입력</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/auth/login</div>
+      <div class="ep-desc">이메일 로그인 → access_token + refresh_token 반환</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/auth/refresh</div>
+      <div class="ep-desc">refresh_token으로 access_token 갱신</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/auth/logout</div>
+      <div class="ep-desc">refresh_token 블랙리스트 등록 (Redis)</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/auth/location/verify</div>
+      <div class="ep-desc">GPS 좌표 → 지역구 매핑 → 위치 인증 처리. users.district_id 업데이트</div>
+      <div class="ep-tags">
+        <span class="tag tag-geo">📍 GPS</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/auth/me</div>
+      <div class="ep-desc">현재 로그인 유저 정보 반환 (id, nickname, political_lean, district_id, location_verified)</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method PATCH">PATCH</span>
+    <div>
+      <div class="ep-path">/auth/me</div>
+      <div class="ep-desc">닉네임 · 정치색 수정</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+</div>
+
+<!-- ── DISTRICTS ── -->
+<div class="section-title">지역구 /districts</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">🗺️</span>
+    <span class="ep-group-base">/api/v1/districts</span>
+    <span class="ep-group-desc">지도 렌더링 · 통계 · GeoJSON</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/districts/stats</div>
+      <div class="ep-desc">전체 250개 지역구 통계 일괄 반환 (stat_left, stat_right, stat_center, dominant, intensity). 지도 초기 색상 렌더링용</div>
+      <div class="ep-tags">
+        <span class="tag tag-cache">⚡ Redis 캐시 5분</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/districts/<span class="param">:districtId</span></div>
+      <div class="ep-desc">단일 지역구 상세 정보 (이름, 시도, 통계, 최신 뉴스 3건)</div>
+      <div class="ep-tags">
+        <span class="tag tag-cache">⚡ Redis 캐시 1분</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/districts/<span class="param">:districtId</span>/news</div>
+      <div class="ep-desc">해당 지역구 뉴스 목록. <code>?limit=5</code> 기본값. 말풍선 + 사이드 패널 뉴스용</div>
+      <div class="ep-tags">
+        <span class="tag tag-cache">⚡ Redis 캐시 30분</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <!-- detail panel for /districts/:id -->
+  <div class="ep-detail">
+    <div class="detail-section">
+      <div class="detail-label">Response — /districts/:id</div>
+      <div class="code-block">{
+  <span class="key">"id"</span>: <span class="str">"11440"</span>,
+  <span class="key">"name"</span>: <span class="str">"마포구"</span>,
+  <span class="key">"sido_name"</span>: <span class="str">"서울특별시"</span>,
+  <span class="key">"assembly_district"</span>: <span class="str">"마포구 갑"</span>,
+  <span class="key">"stats"</span>: {
+    <span class="key">"left"</span>: <span class="num">142</span>,
+    <span class="key">"center"</span>: <span class="num">189</span>,
+    <span class="key">"right"</span>: <span class="num">67</span>,
+    <span class="key">"total"</span>: <span class="num">398</span>,
+    <span class="key">"dominant"</span>: <span class="str">"center"</span>,
+    <span class="key">"intensity"</span>: <span class="num">1</span>
+  },
+  <span class="key">"top_news"</span>: [{ <span class="key">"title"</span>: <span class="str">"..."</span>, <span class="key">"url"</span>: <span class="str">"..."</span> }]
+}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">Response — /districts/stats (배열 축약형)</div>
+      <div class="code-block">[
+  {
+    <span class="key">"id"</span>: <span class="str">"11110"</span>,
+    <span class="key">"dominant"</span>: <span class="str">"left"</span>,
+    <span class="key">"intensity"</span>: <span class="num">2</span>,
+    <span class="key">"left_pct"</span>: <span class="num">58</span>,
+    <span class="key">"center_pct"</span>: <span class="num">24</span>,
+    <span class="key">"right_pct"</span>: <span class="num">18</span>
+  },
+  <span class="cm">// ... 250개</span>
+]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── POSTS ── -->
+<div class="section-title">게시글 /posts</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">✏️</span>
+    <span class="ep-group-base">/api/v1/posts</span>
+    <span class="ep-group-desc">게시글 CRUD · 필터 · 좋아요 · 신고</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/posts</div>
+      <div class="ep-desc">지역구별 게시글 목록. <code>?district_id=11440&lean=center&sort=latest&cursor=xxx&limit=20</code></div>
+      <div class="ep-tags">
+        <span class="tag tag-paginate">↓ 커서 페이지네이션</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/posts/hot</div>
+      <div class="ep-desc">핫이슈 게시글. <code>?district_id=11440</code> — 최근 24시간 내 좋아요 + 댓글 합산 상위 10건</div>
+      <div class="ep-tags">
+        <span class="tag tag-cache">⚡ Redis 캐시 5분</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span></div>
+      <div class="ep-desc">단일 게시글 상세</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/posts</div>
+      <div class="ep-desc">게시글 작성. 위치 인증 필수. 작성 즉시 Claude API 품질 판단 → status 결정</div>
+      <div class="ep-tags">
+        <span class="tag tag-ai">🤖 AI 필터</span>
+        <span class="tag tag-geo">📍 위치 인증</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-loc">📍 LOC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method PATCH">PATCH</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span></div>
+      <div class="ep-desc">게시글 수정. 본인만 가능. 수정 시 AI 재검사 적용</div>
+      <div class="ep-tags">
+        <span class="tag tag-ai">🤖 AI 재검사</span>
+      </div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method DELETE">DELETE</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span></div>
+      <div class="ep-desc">게시글 삭제 (soft delete). 본인 또는 관리자. districts 통계 캐시 자동 무효화</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method PATCH">PATCH</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span>/hide</div>
+      <div class="ep-desc">본인 게시글 숨김 토글 (hidden ↔ active)</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span>/like</div>
+      <div class="ep-desc">좋아요 토글 (이미 눌렀으면 취소). post_likes UNIQUE 제약으로 중복 방지</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/posts/<span class="param">:postId</span>/report</div>
+      <div class="ep-desc">신고 접수. reason: abuse|hate|spam|irrelevant. 5회 누적 시 pending 자동 전환</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <!-- Request/Response detail -->
+  <div class="ep-detail">
+    <div class="detail-section">
+      <div class="detail-label">Request Body — POST /posts</div>
+      <div class="code-block">{
+  <span class="key">"district_id"</span>: <span class="str">"11440"</span>,
+  <span class="key">"political_lean"</span>: <span class="str">"center"</span>,
+  <span class="key">"content"</span>: <span class="str">"마포구 재개발 관련 의견..."</span>
+}
+
+<span class="cm">// Headers</span>
+Authorization: Bearer {access_token}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">Response — GET /posts (목록)</div>
+      <div class="code-block">{
+  <span class="key">"items"</span>: [{
+    <span class="key">"id"</span>: <span class="str">"uuid"</span>,
+    <span class="key">"content"</span>: <span class="str">"..."</span>,
+    <span class="key">"political_lean"</span>: <span class="str">"center"</span>,
+    <span class="key">"like_count"</span>: <span class="num">24</span>,
+    <span class="key">"ai_score"</span>: <span class="num">0.82</span>,
+    <span class="key">"author"</span>: { <span class="key">"nickname"</span>: <span class="str">"마포구민···34"</span> },
+    <span class="key">"created_at"</span>: <span class="str">"2026-06-09T10:00:00Z"</span>
+  }],
+  <span class="key">"next_cursor"</span>: <span class="str">"eyJ..."</span>,
+  <span class="key">"has_more"</span>: <span class="kw">true</span>
+}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEWS ── -->
+<div class="section-title">뉴스 /news</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">📰</span>
+    <span class="ep-group-base">/api/v1/news</span>
+    <span class="ep-group-desc">전국 티커 · 지역 뉴스</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/news/national</div>
+      <div class="ep-desc">전국 주요 뉴스 Top 5. 상단 티커용. <code>is_national = true</code> 기준 최신순</div>
+      <div class="ep-tags"><span class="tag tag-cache">⚡ Redis 캐시 30분</span></div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/news/district/<span class="param">:districtId</span></div>
+      <div class="ep-desc">지역구 뉴스 목록. <code>?limit=5</code>. 말풍선·사이드 패널 표시용</div>
+      <div class="ep-tags"><span class="tag tag-cache">⚡ Redis 캐시 30분</span></div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-pub">🌐 PUBLIC</span></div>
+  </div>
+</div>
+
+<!-- ── USERS ── -->
+<div class="section-title">사용자 /users</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">👤</span>
+    <span class="ep-group-base">/api/v1/users</span>
+    <span class="ep-group-desc">마이페이지 · 차단 관리</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/users/me/posts</div>
+      <div class="ep-desc">내 게시글 목록. <code>?status=active|hidden|all&cursor=xxx</code></div>
+      <div class="ep-tags"><span class="tag tag-paginate">↓ 커서 페이지네이션</span></div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/users/me/blocks</div>
+      <div class="ep-desc">내가 차단한 유저 목록</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method POST">POST</span>
+    <div>
+      <div class="ep-path">/users/<span class="param">:userId</span>/block</div>
+      <div class="ep-desc">유저 차단. user_blocks UNIQUE 제약으로 중복 방지</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method DELETE">DELETE</span>
+    <div>
+      <div class="ep-path">/users/<span class="param">:userId</span>/block</div>
+      <div class="ep-desc">차단 해제</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method DELETE">DELETE</span>
+    <div>
+      <div class="ep-path">/users/me</div>
+      <div class="ep-desc">회원 탈퇴. 게시글 soft delete + 개인정보 익명화 처리</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-user">🔐 USER</span></div>
+  </div>
+</div>
+
+<!-- ── ADMIN ── -->
+<div class="section-title">관리자 /admin</div>
+<div class="ep-group">
+  <div class="ep-group-header">
+    <span class="ep-group-icon">🛡️</span>
+    <span class="ep-group-base">/api/v1/admin</span>
+    <span class="ep-group-desc">어뷰징 처리 · 게시글 관리 (관리자 전용)</span>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/admin/queue</div>
+      <div class="ep-desc">처리 대기 큐. <code>pending</code> 상태 게시글 + AI 점수 + 신고 사유 포함</div>
+      <div class="ep-tags"><span class="tag tag-ai">🤖 AI 점수 포함</span></div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-admin">🛡️ ADMIN</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method PATCH">PATCH</span>
+    <div>
+      <div class="ep-path">/admin/posts/<span class="param">:postId</span>/action</div>
+      <div class="ep-desc">게시글 처리. <code>action: hide|delete|restore</code>. moderation_log 자동 기록</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-admin">🛡️ ADMIN</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method PATCH">PATCH</span>
+    <div>
+      <div class="ep-path">/admin/users/<span class="param">:userId</span>/warn</div>
+      <div class="ep-desc">경고 부여. warning_count +1. 3회 시 status = banned 자동 전환</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-admin">🛡️ ADMIN</span></div>
+  </div>
+
+  <div class="ep-row">
+    <span class="method GET">GET</span>
+    <div>
+      <div class="ep-path">/admin/stats</div>
+      <div class="ep-desc">전체 통계 대시보드용. 일별 게시글 수, 어뷰징 비율, 지역구별 활동 현황</div>
+    </div>
+    <div class="ep-right"><span class="auth-badge auth-admin">🛡️ ADMIN</span></div>
+  </div>
+</div>
+
+<!-- ── Rate Limit ── -->
+<div class="section-title">Rate Limit 정책</div>
+<div class="ep-group">
+  <div class="ep-group-header" style="border-bottom:1px solid var(--border);">
+    <span class="ep-group-icon">🚦</span>
+    <span class="ep-group-base">IP / 유저 기반 요청 제한</span>
+    <span class="ep-group-desc">Redis 슬라이딩 윈도우 방식</span>
+  </div>
+  <div style="padding:0;">
+    <table class="rl-table">
+      <tr><th>엔드포인트</th><th>대상</th><th>제한</th><th>초과 시</th></tr>
+      <tr><td>POST /posts</td><td>유저</td><td>분당 3회 · 일 50회</td><td>429 Too Many Requests</td></tr>
+      <tr><td>POST /posts/:id/like</td><td>유저</td><td>분당 30회</td><td>429</td></tr>
+      <tr><td>POST /posts/:id/report</td><td>유저</td><td>시간당 10회</td><td>429</td></tr>
+      <tr><td>POST /auth/login</td><td>IP</td><td>분당 5회</td><td>429 + 5분 잠금</td></tr>
+      <tr><td>GET /districts/stats</td><td>IP</td><td>분당 60회</td><td>429</td></tr>
+      <tr><td>전체 API</td><td>IP</td><td>분당 200회</td><td>429</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ── 에러 코드 ── -->
+<div class="section-title">공통 에러 응답 형식</div>
+<div class="ep-group">
+  <div class="ep-detail" style="grid-template-columns: 1fr 1fr;">
+    <div class="detail-section">
+      <div class="detail-label">에러 응답 구조</div>
+      <div class="code-block">{
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>: <span class="str">"LOCATION_NOT_VERIFIED"</span>,
+    <span class="key">"message"</span>: <span class="str">"위치 인증이 필요합니다"</span>,
+    <span class="key">"status"</span>: <span class="num">403</span>
+  }
+}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">주요 에러 코드</div>
+      <div class="code-block"><span class="str">"UNAUTHORIZED"</span>          <span class="num">401</span>
+<span class="str">"TOKEN_EXPIRED"</span>          <span class="num">401</span>
+<span class="str">"FORBIDDEN"</span>              <span class="num">403</span>
+<span class="str">"LOCATION_NOT_VERIFIED"</span>  <span class="num">403</span>
+<span class="str">"WRONG_DISTRICT"</span>         <span class="num">403</span> <span class="cm">// 타 지역 작성 시도</span>
+<span class="str">"POST_NOT_FOUND"</span>         <span class="num">404</span>
+<span class="str">"ALREADY_LIKED"</span>          <span class="num">409</span>
+<span class="str">"AI_FILTER_REJECTED"</span>     <span class="num">422</span> <span class="cm">// 품질 미달</span>
+<span class="str">"RATE_LIMIT_EXCEEDED"</span>    <span class="num">429</span>
+<span class="str">"INTERNAL_ERROR"</span>         <span class="num">500</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

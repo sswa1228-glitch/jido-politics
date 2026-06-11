@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<!-- 지도정치 로드맵 v2.1 | 2026-06-11 | base: roadmap_final.html -->
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — 전체 로드맵 v2.1</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --red: #C82020; --green: #2ECC71;
+  --orange: #E67E22; --purple: #8B5CF6; --teal: #14B8A6; --pink: #EC4899;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+  --phase1: #2ECC71; --phase2: #2B72C8; --phase3: #8B5CF6; --phase4: #E67E22;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; padding: 24px; min-height: 100vh; }
+
+h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
+
+.section-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 14px; margin-top: 32px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── NEW FEATURE CARDS ── */
+.new-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 6px; }
+@media (max-width: 960px) { .new-features { grid-template-columns: 1fr; } }
+
+.feat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.feat-header {
+  display: flex; align-items: center; gap: 9px; padding: 12px 14px;
+  border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700;
+}
+.feat-icon { font-size: 18px; }
+.feat-body { padding: 13px 14px; }
+.feat-tag {
+  display: inline-block; font-size: 9px; font-weight: 800; padding: 2px 7px;
+  border-radius: 10px; letter-spacing: .05em; margin-bottom: 10px;
+}
+
+.item-list { display: flex; flex-direction: column; gap: 7px; }
+.item { display: flex; gap: 8px; font-size: 11px; color: var(--text-dim); line-height: 1.55; }
+.item-dot { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; }
+.item strong { color: var(--text); }
+.item code { background: var(--surface2); color: var(--text); padding: 1px 5px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px; }
+
+/* ── BATTLE ANIMATION SPEC ── */
+.battle-spec {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; margin-bottom: 16px;
+}
+.battle-preview {
+  background: linear-gradient(135deg, rgba(43,114,200,.15) 0%, rgba(13,15,20,1) 50%, rgba(200,32,32,.15) 100%);
+  padding: 28px; display: flex; align-items: center; justify-content: center; gap: 0;
+  border-bottom: 1px solid var(--border); position: relative; min-height: 140px;
+}
+.battle-char {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700;
+}
+.char-sprite {
+  font-size: 48px; line-height: 1;
+  filter: drop-shadow(0 0 12px currentColor);
+  animation: bob 1.5s ease-in-out infinite;
+}
+.char-sprite.left-char  { color: var(--blue);  animation-delay: 0s; }
+.char-sprite.right-char { color: var(--red); animation-delay: .75s; transform: scaleX(-1); display: inline-block; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes bob-flip { 0%,100%{transform:scaleX(-1) translateY(0)} 50%{transform:scaleX(-1) translateY(-6px)} }
+.right-char { animation: bob-flip 1.5s ease-in-out infinite .75s !important; }
+.battle-vs {
+  font-size: 28px; font-weight: 900; color: var(--accent);
+  text-shadow: 0 0 20px var(--accent); margin: 0 24px;
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(1.1)} }
+.battle-bar-wrap {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; width: 60%; max-width: 320px;
+}
+.battle-bar {
+  flex: 1; height: 6px; border-radius: 3px; overflow: hidden;
+  display: flex; background: var(--border);
+}
+.bb-left  { background: var(--blue); height: 100%; border-radius: 3px 0 0 3px; }
+.bb-right { background: var(--red);  height: 100%; border-radius: 0 3px 3px 0; }
+.bb-label { font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+.battle-body { padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .battle-body { grid-template-columns: 1fr; } }
+
+/* ── POLITICAL TENDENCY UI ── */
+.tendency-preview {
+  background: var(--surface2); border-radius: 10px; padding: 16px;
+  margin-bottom: 12px;
+}
+.tendency-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.tendency-title { font-size: 13px; font-weight: 700; }
+.tendency-chip {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  background: rgba(43,114,200,.2); color: var(--blue);
+}
+.tend-bar-outer { height: 20px; border-radius: 10px; background: var(--border); overflow: hidden; position: relative; margin-bottom: 8px; display: flex; }
+.tend-left  { background: linear-gradient(90deg, #0A3D8F, #2B72C8); border-radius: 10px 0 0 10px; display: flex; align-items: center; padding-left: 10px; font-size: 10px; font-weight: 700; color: #fff; }
+.tend-cent  { background: #4B5563; }
+.tend-right { background: linear-gradient(90deg, #C82020, #7A0A0A); border-radius: 0 10px 10px 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 10px; font-weight: 700; color: #fff; }
+.tend-needle {
+  position: absolute; top: -2px; bottom: -2px; width: 3px;
+  background: var(--accent); border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent);
+  left: 38%;
+}
+.tend-stats { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); }
+.tend-history { display: flex; gap: 6px; margin-top: 10px; }
+.tend-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid var(--border);
+}
+
+/* ── HIERARCHY MAP SPEC ── */
+.hierarchy-viz {
+  display: flex; flex-direction: column; gap: 0;
+  background: var(--surface2); border-radius: 10px; overflow: hidden;
+}
+.hier-level {
+  padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
+}
+.hier-level:last-child { border-bottom: none; }
+.hier-indent { flex-shrink: 0; }
+.hier-name { font-size: 12px; font-weight: 700; color: var(--text); min-width: 80px; }
+.hier-bar-wrap { flex: 1; height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; display: flex; }
+.hb-l { background: var(--blue); }
+.hb-c { background: #4B5563; }
+.hb-r { background: var(--red); }
+.hier-num { font-size: 10px; color: var(--text-dim); white-space: nowrap; min-width: 60px; text-align: right; }
+.hier-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+
+/* ── TECH STACK ── */
+.stack-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 800px) { .stack-grid { grid-template-columns: repeat(2,1fr); } }
+
+.stack-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.stack-layer { font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+.stack-item { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; font-size: 11px; color: var(--text-dim); }
+.stack-item::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
+.stack-item strong { color: var(--text); }
+
+/* ── ROADMAP ── */
+.roadmap { display: flex; flex-direction: column; gap: 0; }
+.phase {
+  display: grid; grid-template-columns: 180px 1fr;
+  border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; margin-bottom: 12px;
+}
+@media (max-width: 700px) { .phase { grid-template-columns: 1fr; } }
+.phase-left {
+  padding: 16px; display: flex; flex-direction: column; justify-content: space-between;
+  border-right: 1px solid var(--border);
+}
+.phase-num { font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+.phase-name { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.phase-period { font-size: 11px; color: var(--text-dim); }
+.phase-right { padding: 16px; background: var(--surface); }
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+.task {
+  display: flex; align-items: flex-start; gap: 8px; font-size: 11px;
+  color: var(--text-dim); line-height: 1.5; padding: 6px 9px;
+  background: var(--surface2); border-radius: 6px;
+}
+.task-icon { flex-shrink: 0; font-size: 12px; margin-top: 1px; }
+.task strong { color: var(--text); }
+.task .new-tag {
+  display: inline-block; font-size: 8px; font-weight: 800; padding: 1px 5px;
+  border-radius: 3px; background: rgba(200,212,0,.2); color: var(--accent);
+  margin-left: 5px; letter-spacing: .04em; vertical-align: middle;
+}
+
+/* DB ADDITIONS */
+.db-add { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+.db-add-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.db-row { display: grid; grid-template-columns: 18px 160px 110px 1fr; gap: 8px; align-items: center; padding: 6px 14px; font-size: 11px; border-bottom: 1px solid rgba(42,47,62,.4); }
+.db-row:last-child { border-bottom: none; }
+.db-row:hover { background: var(--surface2); }
+.fi { font-size: 10px; color: var(--text-faint); text-align: center; }
+.fn { color: var(--text); font-weight: 600; font-family: 'Courier New', monospace; }
+.fn.pk { color: var(--accent); }
+.fn.fk { color: var(--purple); }
+.ft { color: var(--text-faint); font-size: 10px; font-family: 'Courier New', monospace; }
+.fd { color: var(--text-dim); font-size: 10px; }
+.tag-pk  { display: inline-block; background: rgba(200,212,0,.12); color: var(--accent); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.tag-fk  { display: inline-block; background: rgba(139,92,246,.12); color: var(--purple); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+.tag-new { display: inline-block; background: rgba(200,212,0,.15); color: var(--accent); font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.card-header { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; }
+.card-body { padding: 14px; }
+
+/* Phase 0 완료 배지 */
+.phase0-done { background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.3); border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+.phase0-done .done-tag { display:inline-block; background:var(--green); color:#0D0F14; font-size:9px; font-weight:900; padding:3px 8px; border-radius:5px; letter-spacing:.08em; margin-bottom:8px; }
+.phase0-done h3 { font-size:13px; font-weight:800; color:var(--green); margin-bottom:6px; }
+.phase0-done ul { list-style:none; padding:0; }
+.phase0-done li { font-size:11px; color:#7A8099; padding:2px 0; }
+.phase0-done li::before { content:'✅ '; }
+/* 퍼블리싱 Phase */
+.publish-phase { background: rgba(200,212,0,.06); border:1px solid rgba(200,212,0,.25); border-radius:10px; padding:16px 18px; margin-bottom:20px; }
+.publish-phase h3 { font-size:13px; font-weight:800; color:var(--accent); margin-bottom:10px; }
+.pub-step { display:flex; align-items:flex-start; gap:10px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.pub-step:last-child { border-bottom:none; }
+.pub-num { font-size:9px; font-weight:900; background:rgba(200,212,0,.15); color:var(--accent); width:20px;height:20px; border-radius:50%; display:flex;align-items:center;justify-content:center; flex-shrink:0; margin-top:1px; }
+.pub-info h4 { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.pub-info p { font-size:11px; color:#7A8099; }
+.pub-tag { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; }
+.tag-now { background:rgba(200,212,0,.15); color:var(--accent); }
+.tag-next { background:rgba(43,114,200,.15); color:#5B9BD5; }
+.tag-later { background:rgba(139,92,246,.15); color:#A78BFA; }
+
+</style>
+</head>
+<body>
+
+  <!-- ── Phase 0: 완료 ──────────────────────────── -->
+  <div class="phase0-done">
+    <div class="done-tag">✅ PHASE 0 — COMPLETE</div>
+    <h3>프로토타입 v1.2.0 완성</h3>
+    <ul>
+      <li>D3.js + TopoJSON 시맨틱 줌 (시도 ↔ 시군구)</li>
+      <li>드릴다운 2단계 (시도 클릭 → 시군구, 시군구 클릭 → 선택)</li>
+      <li>위치 기반 글쓰기 권한 체크 (MY_LOC 하드코딩)</li>
+      <li>의견 CRUD 목업 (진보/중도/보수, Reddit Hot Score 정렬)</li>
+      <li>뉴스 탭 목업 (권역 뉴스)</li>
+      <li>상단 뉴스 티커, 줌 컨트롤, 내 위치 이동 버튼</li>
+      <li>반응형 레이아웃 (데스크탑 60:40 / 모바일 하단 시트)</li>
+      <li>색상 범례 7단계 (진보 3 / 중도 / 보수 3)</li>
+    </ul>
+  </div>
+
+  <!-- ── 퍼블리싱 로드맵 ──────────────────────────── -->
+  <div class="publish-phase">
+    <h3>🚀 퍼블리싱 로드맵 — 현재 진행 단계</h3>
+    <div class="pub-step">
+      <div class="pub-num">1</div>
+      <div class="pub-info">
+        <h4>GitHub 형상관리 셋업 <span class="pub-tag tag-now">지금</span></h4>
+        <p>main / develop / feature/* 브랜치 전략. 커밋 컨벤션 (feat/fix/docs). CHANGELOG 관리.</p>
+      </div>
+    </div>
+    <div class="pub-step">
+      <div class="pub-num">2</div>
+      <div class="pub-info">
+        <h4>정적 호스팅 배포 <span class="pub-tag tag-now">지금</span></h4>
+        <p>GitHub Pages 또는 Vercel로 현재 v1.2.0 HTML 즉시 배포. 도메인 연결 (선택).</p>
+      </div>
+    </div>
+    <div class="pub-step">
+      <div class="pub-num">3</div>
+      <div class="pub-info">
+        <h4>React 포팅 <span class="pub-tag tag-next">다음</span></h4>
+        <p>Vite + React 18 + TypeScript. react_structure.html 컴포넌트 분리 기준 적용. 현재 HTML 1:1 이식 후 기능 확장.</p>
+      </div>
+    </div>
+    <div class="pub-step">
+      <div class="pub-num">4</div>
+      <div class="pub-info">
+        <h4>FastAPI 백엔드 연동 <span class="pub-tag tag-next">다음</span></h4>
+        <p>PostgreSQL + Redis. api_endpoints.html 명세 기준 REST API 구현. 실제 위치 인증 (GPS → 지역구 매핑).</p>
+      </div>
+    </div>
+    <div class="pub-step">
+      <div class="pub-num">5</div>
+      <div class="pub-info">
+        <h4>뉴스 크롤러 + AI 연동 <span class="pub-tag tag-later">이후</span></h4>
+        <p>Claude Haiku 뉴스 요약·어뷰징 필터. Celery 크롤링 스케줄러. 실시간 지역 뉴스 반영.</p>
+      </div>
+    </div>
+    <div class="pub-step">
+      <div class="pub-num">6</div>
+      <div class="pub-info">
+        <h4>게임화 + 댓글 + 관리자 대시보드 <span class="pub-tag tag-later">이후</span></h4>
+        <p>로드맵 v2.0 신규 6가지 기능. 배틀 모션, 성향 분석 UI, 계층 집계, 프로필 활동 내역.</p>
+      </div>
+    </div>
+  </div>
+
+
+<h1>지도<span>정치</span> — 전체 로드맵 + 신규 기능 스펙</h1>
+<p class="subtitle">기획 v2.0 · 게이미피케이션 · 댓글 · 성향 분석 · 계층 통계 · 관리자 대시보드</p>
+
+<!-- ── 신규 기능 개요 ── -->
+<div class="section-title">신규 기능 6가지 — 개요</div>
+<div class="new-features">
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--accent);">
+      <span class="feat-icon">⚔️</span>대립 지역 배틀 모션
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(200,212,0,.15);color:var(--accent)">GAMIFICATION</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>진보/보수 의견 비율이 <strong>45:55 ~ 55:45 박빙 구간</strong>인 지역구에 발동</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>지도 위 해당 지역구에 <strong>SD 캐릭터 칼싸움 CSS 애니메이션</strong> 오버레이</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>캐릭터 체력바 = 실시간 의견 비율 — 의견 추가 시 실시간 반영</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>클릭 시 "현재 접전 중! 진보 48% vs 보수 52%" 말풍선</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--teal);">
+      <span class="feat-icon">💬</span>댓글 · 대댓글
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(20,184,166,.15);color:var(--teal)">COMMUNITY</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div>게시글 하위 <strong>1단계 댓글 + 1단계 대댓글</strong> (최대 2depth)</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div>댓글에도 <strong>정치색 선택</strong> + 좋아요 + 신고 가능</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div>댓글 작성도 <strong>AI 어뷰징 필터</strong> 동일 적용</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--teal)"></div><div>댓글 수는 <code>posts.comment_count</code> 캐시 컬럼으로 관리</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--purple);">
+      <span class="feat-icon">📊</span>사용자 성향 분석 UI
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(139,92,246,.15);color:var(--purple)">PROFILE</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>내가 쓴 게시글·댓글의 정치색 비율 → <strong>좌↔우 스펙트럼 바</strong></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>최근 30일 / 전체 기간 기준 토글</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>시간별 성향 변화 <strong>히스토리 도트</strong> 표시</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>프로필에 "진보 성향 68%" 같은 <strong>자동 라벨링</strong> 표시</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--blue);">
+      <span class="feat-icon">🏛️</span>계층별 의견 집계 UI
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(43,114,200,.15);color:#7BAED4">MAP FEATURE</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>시군구 → 시도 → 전국</strong> 3단계 집계 롤업</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>줌 레벨에 따라 하위 단위 의견이 상위 단위에 자동 합산</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>시도 클릭 시 → 하위 시군구 목록 + 각 의견 비율 인라인 표시</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>전국 뷰에서 "경기도 진보 54% (42개 시군구 합산)" 형태로 표시</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--orange);">
+      <span class="feat-icon">🖥️</span>관리자 통계 대시보드
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(230,126,34,.15);color:var(--orange)">ADMIN</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>일별/주별/월별 <strong>게시글·댓글 수 추이</strong> 차트</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>지역구별 <strong>정치 성향 분포 히트맵</strong></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>어뷰징 비율·신고 유형별 통계, AI 판단 정확도 추이</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--orange)"></div><div>시간대별 활동 분포, 신규 가입자 현황 등 <strong>운영 KPI</strong></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feat-card">
+    <div class="feat-header" style="border-top:3px solid var(--pink);">
+      <span class="feat-icon">👤</span>프로필 활동 내역
+    </div>
+    <div class="feat-body">
+      <span class="feat-tag" style="background:rgba(236,72,153,.15);color:var(--pink)">PROFILE</span>
+      <div class="item-list">
+        <div class="item"><div class="item-dot" style="background:var(--pink)"></div><div>내가 쓴 <strong>게시글 + 댓글 통합 타임라인</strong></div></div>
+        <div class="item"><div class="item-dot" style="background:var(--pink)"></div><div>지역구별 참여 현황 — "마포구 12건 · 종로구 3건"</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--pink)"></div><div>받은 좋아요 총합 · 활동 레벨 (씨앗→새싹→나무→숲)</div></div>
+        <div class="item"><div class="item-dot" style="background:var(--pink)"></div><div>다른 유저 프로필도 <strong>공개 범위 내에서</strong> 열람 가능</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 배틀 모션 상세 ── -->
+<div class="section-title">⚔️ 배틀 모션 — 상세 스펙</div>
+<div class="battle-spec">
+  <div class="battle-preview">
+    <div class="battle-char">
+      <div class="char-sprite left-char">🧙</div>
+      <div style="color:var(--blue);font-size:11px;font-weight:800;">진보</div>
+    </div>
+    <div class="battle-vs">VS</div>
+    <div class="battle-char">
+      <div class="char-sprite right-char" style="display:inline-block;">⚔️🧙</div>
+      <div style="color:var(--red);font-size:11px;font-weight:800;">보수</div>
+    </div>
+    <div class="battle-bar-wrap">
+      <span class="bb-label" style="color:var(--blue)">48%</span>
+      <div class="battle-bar">
+        <div class="bb-left" style="width:48%"></div>
+        <div class="bb-right" style="width:52%"></div>
+      </div>
+      <span class="bb-label" style="color:var(--red)">52%</span>
+    </div>
+  </div>
+  <div class="battle-body">
+    <div class="item-list">
+      <div style="font-size:11px;font-weight:800;color:var(--text-dim);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;">발동 조건</div>
+      <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>진보·보수 비율 차이 <strong>10% 이내</strong> (45:55 ~ 55:45)</div></div>
+      <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>해당 지역구 총 의견 <strong>20개 이상</strong> (데이터 신뢰도)</div></div>
+      <div class="item"><div class="item-dot" style="background:var(--accent)"></div><div>중도 비율이 <strong>30% 미만</strong>일 때만 (박빙 의미 있을 때)</div></div>
+    </div>
+    <div class="item-list">
+      <div style="font-size:11px;font-weight:800;color:var(--text-dim);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;">구현 방식</div>
+      <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>CSS keyframe 애니메이션</strong> — SVG/Lottie 아닌 순수 CSS (성능 최적화)</div></div>
+      <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>지도 줌 레벨 <strong>시군구 단계일 때만</strong> 표시 (전국뷰 노이즈 방지)</div></div>
+      <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>캐릭터는 <strong>유니코드 이모지 + CSS transform</strong> 조합으로 SD 느낌</div></div>
+      <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>의견 추가 시 체력바 <strong>실시간 업데이트</strong> (WebSocket 또는 polling)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 성향 분석 UI ── -->
+<div class="section-title">📊 사용자 정치 성향 분석 UI</div>
+<div class="two-col">
+  <div>
+    <div class="tendency-preview">
+      <div class="tendency-header">
+        <div class="tendency-title">나의 정치 성향</div>
+        <div class="tendency-chip">진보 성향 68%</div>
+      </div>
+      <div style="position:relative;">
+        <div class="tend-bar-outer">
+          <div class="tend-left" style="width:38%">38%</div>
+          <div class="tend-cent" style="width:24%"></div>
+          <div class="tend-right" style="width:38%">38%</div>
+        </div>
+        <div class="tend-needle" style="left:32%"></div>
+      </div>
+      <div class="tend-stats">
+        <span style="color:var(--blue)">진보 68%</span>
+        <span>중도 18%</span>
+        <span style="color:var(--red)">보수 14%</span>
+      </div>
+      <div style="font-size:10px;color:var(--text-faint);margin-top:10px;margin-bottom:6px;">최근 30일 성향 변화</div>
+      <div class="tend-history">
+        <div class="tend-dot" style="background:#3B7DD8"></div>
+        <div class="tend-dot" style="background:#2B72C8"></div>
+        <div class="tend-dot" style="background:#4B5563"></div>
+        <div class="tend-dot" style="background:#2B72C8"></div>
+        <div class="tend-dot" style="background:#0A3D8F"></div>
+        <div class="tend-dot" style="background:#0A3D8F"></div>
+        <div class="tend-dot" style="background:#2B72C8"></div>
+        <div class="tend-dot" style="background:#4B5563"></div>
+        <div class="tend-dot" style="background:var(--accent);border-color:var(--accent)"></div>
+        <span style="font-size:10px;color:var(--text-faint);margin-left:4px;">오늘</span>
+      </div>
+    </div>
+  </div>
+  <div class="item-list" style="justify-content:center;">
+    <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>계산 방식</strong> — 게시글 정치색 가중치 1.0 + 댓글 정치색 가중치 0.5 합산</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>노란 바늘</strong>이 현재 성향 위치를 가리킴 — 좌 끝(순수 진보) ~ 우 끝(순수 보수)</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>히스토리 도트</strong> — 30일간 날짜별 성향 색상 점으로 흐름 시각화</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div><strong>공개/비공개</strong> 설정 가능 — 비공개 시 본인만 확인</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--purple)"></div><div>DB 컬럼 <code>users.tendency_left / tendency_right / tendency_center</code> — 글 작성 시 트리거로 갱신</div></div>
+  </div>
+</div>
+
+<!-- ── 계층 집계 UI ── -->
+<div class="section-title">🏛️ 계층별 의견 집계 — 시군구 → 시도 → 전국</div>
+<div class="two-col">
+  <div>
+    <div class="hierarchy-viz">
+      <div class="hier-level" style="background:rgba(200,212,0,.05);">
+        <span class="hier-indent" style="width:0px"></span>
+        <span class="hier-name" style="color:var(--accent)">🇰🇷 전국</span>
+        <div class="hier-bar-wrap">
+          <div class="hb-l" style="width:42%"></div>
+          <div class="hb-c" style="width:22%"></div>
+          <div class="hb-r" style="width:36%"></div>
+        </div>
+        <span class="hier-num">47,293건</span>
+        <span class="hier-badge" style="background:rgba(43,114,200,.2);color:var(--blue)">진보 42%</span>
+      </div>
+      <div class="hier-level">
+        <span class="hier-indent" style="width:14px;color:var(--text-faint)">└</span>
+        <span class="hier-name">서울특별시</span>
+        <div class="hier-bar-wrap">
+          <div class="hb-l" style="width:54%"></div>
+          <div class="hb-c" style="width:20%"></div>
+          <div class="hb-r" style="width:26%"></div>
+        </div>
+        <span class="hier-num">12,847건</span>
+        <span class="hier-badge" style="background:rgba(43,114,200,.2);color:var(--blue)">진보 우세</span>
+      </div>
+      <div class="hier-level" style="background:rgba(200,212,0,.04);">
+        <span class="hier-indent" style="width:28px;color:var(--text-faint)"> └</span>
+        <span class="hier-name" style="color:var(--accent)">마포구 ▶</span>
+        <div class="hier-bar-wrap">
+          <div class="hb-l" style="width:38%"></div>
+          <div class="hb-c" style="width:42%"></div>
+          <div class="hb-r" style="width:20%"></div>
+        </div>
+        <span class="hier-num">398건</span>
+        <span class="hier-badge" style="background:rgba(75,85,99,.3);color:#9CA3AF">중도 우세</span>
+      </div>
+      <div class="hier-level">
+        <span class="hier-indent" style="width:28px;color:var(--text-faint)"> └</span>
+        <span class="hier-name">종로구</span>
+        <div class="hier-bar-wrap">
+          <div class="hb-l" style="width:68%"></div>
+          <div class="hb-c" style="width:17%"></div>
+          <div class="hb-r" style="width:15%"></div>
+        </div>
+        <span class="hier-num">145건</span>
+        <span class="hier-badge" style="background:rgba(10,61,143,.4);color:#7BAED4">진보 압도</span>
+      </div>
+      <div class="hier-level">
+        <span class="hier-indent" style="width:14px;color:var(--text-faint)">└</span>
+        <span class="hier-name">경상북도</span>
+        <div class="hier-bar-wrap">
+          <div class="hb-l" style="width:18%"></div>
+          <div class="hb-c" style="width:15%"></div>
+          <div class="hb-r" style="width:67%"></div>
+        </div>
+        <span class="hier-num">6,201건</span>
+        <span class="hier-badge" style="background:rgba(122,10,10,.4);color:#D47A7A">보수 압도</span>
+      </div>
+    </div>
+  </div>
+  <div class="item-list" style="justify-content:center;">
+    <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>롤업 로직</strong> — 시군구 <code>stat_*</code> 합산 → 시도 <code>sido_stats</code> 테이블에 주기적 갱신</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>지도 줌에 연동</strong> — 전국뷰: 17개 시도 색상 / 시도뷰: 시군구 색상 자동 전환</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div><strong>시도 클릭</strong> 시 하위 시군구 목록 아코디언 확장 — 각 의견 비율 인라인 바 표시</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>새 테이블 <code>sido_stats</code> 추가 — Celery 5분 주기 갱신</div></div>
+    <div class="item"><div class="item-dot" style="background:var(--blue)"></div><div>전국 통계 <code>national_stats</code> 는 Redis 단독 캐시 (DB 불필요)</div></div>
+  </div>
+</div>
+
+<!-- ── DB 추가 테이블 ── -->
+<div class="section-title">신규 기능 반영 — DB 추가 항목</div>
+<div class="two-col">
+
+  <div class="db-add">
+    <div class="db-add-header" style="border-top:3px solid var(--teal);">💬 comments <span style="font-size:10px;color:var(--text-dim);margin-left:6px;">NEW 테이블</span></div>
+    <div class="db-row"><span class="fi">🔑</span><span class="fn pk">id<span class="tag-pk">PK</span></span><span class="ft">uuid</span><span class="fd">기본키</span></div>
+    <div class="db-row"><span class="fi">🔗</span><span class="fn fk">post_id<span class="tag-fk">FK</span></span><span class="ft">uuid</span><span class="fd">→ posts.id</span></div>
+    <div class="db-row"><span class="fi">🔗</span><span class="fn fk">parent_id<span class="tag-fk">FK</span></span><span class="ft">uuid</span><span class="fd">→ comments.id (대댓글, NULL이면 댓글)</span></div>
+    <div class="db-row"><span class="fi">🔗</span><span class="fn fk">user_id<span class="tag-fk">FK</span></span><span class="ft">uuid</span><span class="fd">→ users.id</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">political_lean</span><span class="ft">enum</span><span class="fd">left / center / right</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">content</span><span class="ft">text</span><span class="fd">댓글 본문</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">status</span><span class="ft">enum</span><span class="fd">active / hidden / deleted</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">ai_score</span><span class="ft">decimal(4,3)</span><span class="fd">AI 품질 점수</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">like_count</span><span class="ft">int</span><span class="fd">좋아요 (캐시)</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">created_at</span><span class="ft">timestamptz</span><span class="fd"></span></div>
+  </div>
+
+  <div class="db-add">
+    <div class="db-add-header" style="border-top:3px solid var(--orange);">📊 sido_stats <span style="font-size:10px;color:var(--text-dim);margin-left:6px;">NEW 테이블</span></div>
+    <div class="db-row"><span class="fi">🔑</span><span class="fn pk">sido_code<span class="tag-pk">PK</span></span><span class="ft">varchar(5)</span><span class="fd">광역시도 코드</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">sido_name</span><span class="ft">varchar(30)</span><span class="fd">광역시도명</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">stat_left</span><span class="ft">int</span><span class="fd">진보 의견 합산</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">stat_center</span><span class="ft">int</span><span class="fd">중도 의견 합산</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">stat_right</span><span class="ft">int</span><span class="fd">보수 의견 합산</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">dominant</span><span class="ft">enum</span><span class="fd">left / center / right</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">intensity</span><span class="ft">int</span><span class="fd">1~3</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">updated_at</span><span class="ft">timestamptz</span><span class="fd">Celery 5분 갱신</span></div>
+    <div class="db-add-header" style="border-top:1px solid var(--border);border-bottom:none;font-size:11px;color:var(--text-dim);">posts 테이블 추가 컬럼</div>
+    <div class="db-row"><span class="fi"></span><span class="fn">comment_count<span class="tag-new">NEW</span></span><span class="ft">int</span><span class="fd">댓글+대댓글 수 (캐시)</span></div>
+    <div class="db-add-header" style="border-top:1px solid var(--border);border-bottom:none;font-size:11px;color:var(--text-dim);">users 테이블 추가 컬럼</div>
+    <div class="db-row"><span class="fi"></span><span class="fn">tendency_left<span class="tag-new">NEW</span></span><span class="ft">decimal(5,2)</span><span class="fd">진보 성향 % (자동 계산)</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">tendency_right<span class="tag-new">NEW</span></span><span class="ft">decimal(5,2)</span><span class="fd">보수 성향 % (자동 계산)</span></div>
+    <div class="db-row"><span class="fi"></span><span class="fn">activity_level<span class="tag-new">NEW</span></span><span class="ft">int</span><span class="fd">1~4 (씨앗→새싹→나무→숲)</span></div>
+  </div>
+
+</div>
+
+<!-- ── 전체 기술 스택 ── -->
+<div class="section-title">전체 기술 스택</div>
+<div class="stack-grid">
+  <div class="stack-card">
+    <div class="stack-layer">Frontend</div>
+    <div class="stack-item"><strong>React 18</strong> + Vite</div>
+    <div class="stack-item"><strong>TypeScript</strong></div>
+    <div class="stack-item"><strong>Zustand</strong> 전역 상태</div>
+    <div class="stack-item"><strong>React Query</strong> 서버 상태</div>
+    <div class="stack-item"><strong>D3.js</strong> 지도 렌더링</div>
+    <div class="stack-item"><strong>Tailwind CSS</strong></div>
+    <div class="stack-item"><strong>Recharts</strong> 통계 차트</div>
+    <div class="stack-item"><strong>Turf.js</strong> GPS 매핑</div>
+  </div>
+  <div class="stack-card">
+    <div class="stack-layer">Backend</div>
+    <div class="stack-item"><strong>FastAPI</strong> (Python)</div>
+    <div class="stack-item"><strong>SQLAlchemy</strong> ORM</div>
+    <div class="stack-item"><strong>Alembic</strong> 마이그레이션</div>
+    <div class="stack-item"><strong>Celery</strong> 비동기 태스크</div>
+    <div class="stack-item"><strong>Pydantic v2</strong> 스키마</div>
+    <div class="stack-item"><strong>httpx</strong> 크롤러</div>
+    <div class="stack-item"><strong>WebSocket</strong> 실시간 배틀</div>
+  </div>
+  <div class="stack-card">
+    <div class="stack-layer">Data / Infra</div>
+    <div class="stack-item"><strong>PostgreSQL 16</strong> 메인 DB</div>
+    <div class="stack-item"><strong>Redis 7</strong> 캐시 + 큐</div>
+    <div class="stack-item"><strong>S3</strong> 정적 에셋</div>
+    <div class="stack-item"><strong>Nginx</strong> 리버스 프록시</div>
+    <div class="stack-item"><strong>Docker Compose</strong></div>
+    <div class="stack-item"><strong>GitHub Actions</strong> CI/CD</div>
+  </div>
+  <div class="stack-card">
+    <div class="stack-layer">AI / External</div>
+    <div class="stack-item"><strong>Claude Haiku</strong> 뉴스 분석</div>
+    <div class="stack-item"><strong>Claude Haiku</strong> 어뷰징 판단</div>
+    <div class="stack-item"><strong>네이버 뉴스 API</strong></div>
+    <div class="stack-item"><strong>Geolocation API</strong></div>
+    <div class="stack-item"><strong>Kakao / Naver</strong> 소셜 로그인</div>
+    <div class="stack-item"><strong>Firebase FCM</strong> 앱 푸시 (추후)</div>
+  </div>
+</div>
+
+<!-- ── 개발 로드맵 ── -->
+<div class="section-title">개발 순서 로드맵</div>
+<div class="roadmap">
+
+  <div class="phase">
+    <div class="phase-left" style="background:rgba(46,204,113,.06); border-right-color:rgba(46,204,113,.2);">
+      <div>
+        <div class="phase-num">Phase 1</div>
+        <div class="phase-name" style="color:var(--phase1)">뼈대 구축</div>
+        <div class="phase-period">4~5주</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-faint);margin-top:8px;">MVP 핵심 기능</div>
+    </div>
+    <div class="phase-right">
+      <div class="task-list">
+        <div class="task"><span class="task-icon">🗄️</span><div><strong>DB 구축</strong> — PostgreSQL + 8개 기본 테이블 + GeoJSON 시군구 데이터 시딩</div></div>
+        <div class="task"><span class="task-icon">🔐</span><div><strong>인증 API</strong> — 회원가입·로그인·JWT·위치 인증 엔드포인트</div></div>
+        <div class="task"><span class="task-icon">🗺️</span><div><strong>지도 렌더링</strong> — D3 + GeoJSON + 7단계 색상 + 클릭 인터랙션</div></div>
+        <div class="task"><span class="task-icon">✏️</span><div><strong>게시글 CRUD</strong> — 작성·조회·수정·삭제 + AI 어뷰징 필터 연동</div></div>
+        <div class="task"><span class="task-icon">📰</span><div><strong>뉴스 크롤러</strong> — Celery + 네이버 API + Claude 요약·분류</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-left" style="background:rgba(43,114,200,.06); border-right-color:rgba(43,114,200,.2);">
+      <div>
+        <div class="phase-num">Phase 2</div>
+        <div class="phase-name" style="color:var(--phase2)">커뮤니티 완성</div>
+        <div class="phase-period">3~4주</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-faint);margin-top:8px;">소통 기능 강화</div>
+    </div>
+    <div class="phase-right">
+      <div class="task-list">
+        <div class="task"><span class="task-icon">💬</span><div><strong>댓글 · 대댓글</strong> <span class="new-tag">NEW</span> — comments 테이블 + API + UI + AI 필터</div></div>
+        <div class="task"><span class="task-icon">👍</span><div><strong>좋아요 · 신고 · 차단</strong> — 완전한 소셜 인터랙션 레이어</div></div>
+        <div class="task"><span class="task-icon">👤</span><div><strong>프로필 · 활동 내역</strong> <span class="new-tag">NEW</span> — 게시글+댓글 타임라인 · 활동 레벨</div></div>
+        <div class="task"><span class="task-icon">📊</span><div><strong>성향 분석 UI</strong> <span class="new-tag">NEW</span> — 스펙트럼 바 · 히스토리 도트 · tendency 컬럼 자동 갱신</div></div>
+        <div class="task"><span class="task-icon">🔔</span><div><strong>기본 알림</strong> — 댓글 알림 · 신고 처리 결과 알림</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-left" style="background:rgba(139,92,246,.06); border-right-color:rgba(139,92,246,.2);">
+      <div>
+        <div class="phase-num">Phase 3</div>
+        <div class="phase-name" style="color:var(--phase3)">게이미피케이션 + 계층 통계</div>
+        <div class="phase-period">3~4주</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-faint);margin-top:8px;">차별화 기능</div>
+    </div>
+    <div class="phase-right">
+      <div class="task-list">
+        <div class="task"><span class="task-icon">⚔️</span><div><strong>배틀 모션 애니메이션</strong> <span class="new-tag">NEW</span> — 박빙 지역구 CSS 애니메이션 + WebSocket 실시간 체력바</div></div>
+        <div class="task"><span class="task-icon">🏛️</span><div><strong>계층별 의견 집계</strong> <span class="new-tag">NEW</span> — sido_stats 테이블 + 지도 줌 연동 + 아코디언 UI</div></div>
+        <div class="task"><span class="task-icon">🌲</span><div><strong>활동 레벨 시스템</strong> — 씨앗→새싹→나무→숲 레벨업 + 배지</div></div>
+        <div class="task"><span class="task-icon">📡</span><div><strong>실시간 통계 갱신</strong> — WebSocket 또는 SSE로 지도 색상 실시간 반영</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-left" style="background:rgba(230,126,34,.06); border-right-color:rgba(230,126,34,.2);">
+      <div>
+        <div class="phase-num">Phase 4</div>
+        <div class="phase-name" style="color:var(--phase4)">관리자 + 앱 출시 준비</div>
+        <div class="phase-period">3~4주</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-faint);margin-top:8px;">운영 안정화</div>
+    </div>
+    <div class="phase-right">
+      <div class="task-list">
+        <div class="task"><span class="task-icon">🖥️</span><div><strong>관리자 대시보드</strong> <span class="new-tag">NEW</span> — 게시글·댓글 통계 차트 · 어뷰징 큐 · 지역별 히트맵 · 운영 KPI</div></div>
+        <div class="task"><span class="task-icon">📊</span><div><strong>통계 DB화</strong> <span class="new-tag">NEW</span> — daily_stats 집계 테이블 · 지역구별 성향 스냅샷 이력 보관</div></div>
+        <div class="task"><span class="task-icon">📱</span><div><strong>모바일 반응형 완성도</strong> — Capacitor 래핑 + 앱스토어 출시 준비</div></div>
+        <div class="task"><span class="task-icon">🚀</span><div><strong>성능 최적화</strong> — GeoJSON lazy loading · 이미지 최적화 · Lighthouse 90+</div></div>
+        <div class="task"><span class="task-icon">🔒</span><div><strong>보안 강화</strong> — Rate limit 튜닝 · XSS/CSRF 점검 · 개인정보 처리방침</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── 총 개발 기간 ── -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+  <div style="background:var(--surface);padding:14px 16px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:var(--phase1);font-family:'Courier New',monospace;">4~5주</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Phase 1 · MVP</div>
+  </div>
+  <div style="background:var(--surface);padding:14px 16px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:var(--phase2);font-family:'Courier New',monospace;">3~4주</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Phase 2 · 커뮤니티</div>
+  </div>
+  <div style="background:var(--surface);padding:14px 16px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:var(--phase3);font-family:'Courier New',monospace;">3~4주</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Phase 3 · 게이미피케이션</div>
+  </div>
+  <div style="background:var(--surface);padding:14px 16px;text-align:center;">
+    <div style="font-size:22px;font-weight:800;color:var(--phase4);font-family:'Courier New',monospace;">3~4주</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">Phase 4 · 출시 준비</div>
+  </div>
+</div>
+<div style="text-align:center;margin-top:8px;font-size:12px;color:var(--text-dim);">
+  총 예상 기간 <strong style="color:var(--accent)">13~17주</strong> (1인 풀스택 기준) · 팀 구성 시 Phase 병렬 진행으로 단축 가능
+</div>
+
+</body>
+</html>
