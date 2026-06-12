@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- 지도정치 v1.6.0 | 2026-06-12 | base: v1.5.0 | feat: 목록/세부뷰 분리 -->
+<!-- 지도정치 v1.7.0 | 2026-06-12 | base: v1.6.0 | feat: 알림(댓글/답글/보팅/공지) + PWA 브라우저 알림 -->
 
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>지도정치 v1.6.0</title>
+<title>지도정치 v1.7.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
@@ -265,6 +265,55 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD
 .profile-dropdown-item:hover{background:var(--surface2);}
 .profile-dropdown-item.danger{color:#D84040;}
 .profile-dropdown-divider{height:1px;background:var(--border);margin:2px 0;}
+/* ── v1.7.0 알림 ── */
+.noti-btn{position:relative;width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;font-family:inherit;flex-shrink:0;}
+.noti-btn:hover{border-color:var(--accent);background:var(--surface);}
+.noti-badge{position:absolute;top:-3px;right:-3px;min-width:16px;height:16px;border-radius:8px;background:#D84040;color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--surface);line-height:1;}
+.noti-badge.hidden{display:none;}
+.noti-panel{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(20,26,60,.16);z-index:500;display:none;flex-direction:column;overflow:hidden;}
+.noti-panel.open{display:flex;}
+.noti-panel-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;border-bottom:1px solid var(--border);}
+.noti-panel-title{font-size:13px;font-weight:800;color:var(--text);}
+.noti-readall-btn{font-size:10px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;}
+.noti-readall-btn:hover{text-decoration:underline;}
+.noti-list{max-height:340px;overflow-y:auto;}
+.noti-list::-webkit-scrollbar{width:3px;}
+.noti-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.noti-item{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative;}
+.noti-item:last-child{border-bottom:none;}
+.noti-item:hover{background:var(--surface2);}
+.noti-item.unread{background:#F5F8FF;}
+.noti-item.unread:hover{background:#EBF1FF;}
+.noti-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px;}
+.noti-icon.comment{background:rgba(44,95,212,.12);}
+.noti-icon.reply{background:rgba(44,95,212,.08);}
+.noti-icon.vote{background:rgba(100,180,60,.1);}
+.noti-icon.notice{background:rgba(184,134,11,.12);}
+.noti-body{flex:1;min-width:0;}
+.noti-body-text{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:2px;}
+.noti-body-text strong{font-weight:700;}
+.noti-body-quote{font-size:11px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.noti-time{font-size:10px;color:var(--text-faint);white-space:nowrap;margin-top:2px;}
+.noti-unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;align-self:center;}
+.noti-empty{padding:32px 14px;text-align:center;color:var(--text-faint);font-size:12px;}
+.noti-footer{padding:8px 14px;border-top:1px solid var(--border);text-align:center;}
+.noti-footer-btn{font-size:11px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;}
+.noti-footer-btn:hover{text-decoration:underline;}
+.noti-wrap{position:relative;display:inline-flex;}
+
+/* 전체 알림 모달 */
+.noti-modal-overlay{position:fixed;inset:0;background:rgba(20,26,50,.55);backdrop-filter:blur(3px);z-index:2000;display:none;align-items:center;justify-content:center;}
+.noti-modal-overlay.open{display:flex;}
+.noti-modal-box{background:#fff;border-radius:16px;box-shadow:0 16px 60px rgba(20,26,60,.18);width:90%;max-width:440px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+.noti-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.noti-modal-title{font-size:16px;font-weight:800;color:var(--text);}
+.noti-modal-close{background:none;border:none;font-size:18px;color:var(--text-faint);cursor:pointer;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.noti-modal-close:hover{background:var(--surface2);}
+.noti-modal-body{flex:1;overflow-y:auto;}
+.noti-filter-row{display:flex;gap:4px;padding:8px 14px;border-bottom:1px solid var(--border);}
+.noti-filter-btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-faint);transition:all .15s;font-family:inherit;}
+.noti-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
 
 /* 비로그인 열람 제한 프롬프트 */
 .login-prompt-overlay{position:fixed;bottom:0;left:0;right:0;z-index:1500;display:none;flex-direction:column;pointer-events:none;}
@@ -895,6 +944,27 @@ var hiddenPosts = new Set();   // 숨김 처리한 게시글 id
 var blockedUsers = new Set();  // 차단한 유저 nickname
 var DRAFT_KEY = 'jdj_write_draft';
 
+// ── v1.7.0 알림 ──
+var NOTIFICATIONS = [
+  {id:'n001',type:'notice',postId:null,postText:null,fromUser:'운영팀',
+   text:'지도정치 v1.7.0이 출시되었습니다! 댓글·답글·보팅 알림 기능이 추가되었어요.',
+   mins_ago:5,read:false},
+  {id:'n002',type:'comment',postId:1,postText:'지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.',
+   fromUser:'경기도민',text:'소상공인 지원은 진작에 했어야 했는데, 이제라도 논의되는 게 다행이네요.',
+   mins_ago:30,read:false},
+  {id:'n003',type:'vote',postId:1,postText:'지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.',
+   fromUser:null,text:'내 의견에 10명이 공감했어요.',mins_ago:45,read:false},
+  {id:'n004',type:'reply',postId:1,postText:'지역 상권 활성화를 위해 소상공인 지원 정책이 필요합니다.',
+   fromUser:'익명44',text:'@익명70 근데 예산은 어디서 나오죠? 그게 문제 아닌가요.',
+   mins_ago:120,read:true},
+  {id:'n005',type:'comment',postId:3,postText:'복지관 예산 삭감은 절대 안 됩니다.',
+   fromUser:'현실주의자',text:'좋은 취지지만 속도가 너무 빠르면 부작용이 생길 수도 있어요.',
+   mins_ago:200,read:true}
+];
+var _notiIdCounter = 100;
+var _notiFilter = 'all'; // 'all'|'comment'|'reply'|'vote'|'notice'
+
+
 var authState = {
   isLoggedIn: false,
   user: null,        // { id, nickname, sido, sigungu }
@@ -932,7 +1002,16 @@ function updateAuthHeader() {
   } else {
     var u = authState.user;
     var initials = (u.nickname||'?').charAt(0);
-    el.innerHTML = '<div class="profile-btn" id="profile-btn" onclick="window.toggleProfileDropdown()">'
+    var unread = NOTIFICATIONS.filter(function(n){return !n.read;}).length;
+    var badgeHtml = unread > 0
+      ? '<div class="noti-badge" id="noti-badge">'+(unread>99?'99+':unread)+'</div>'
+      : '<div class="noti-badge hidden" id="noti-badge"></div>';
+    el.innerHTML = '<div class="noti-wrap" id="noti-wrap">'
+      + '<button class="noti-btn" id="noti-btn" onclick="window.toggleNotiPanel(event)" title="알림">🔔</button>'
+      + badgeHtml
+      + '<div class="noti-panel" id="noti-panel"></div>'
+      + '</div>'
+      + '<div class="profile-btn" id="profile-btn" onclick="window.toggleProfileDropdown()">'
       + '<div class="profile-avatar">' + initials + '</div>'
       + '<span>' + u.nickname + '</span>'
       + '<span style="font-size:9px;color:var(--text-faint);">▾</span>'
@@ -942,6 +1021,7 @@ function updateAuthHeader() {
       + '<div class="profile-dropdown-divider"></div>'
       + '<div class="profile-dropdown-item danger" onclick="window.logout()">🚪 로그아웃</div>'
       + '</div></div>';
+    setTimeout(function(){ window.renderNotiDropdown(); }, 0);
   }
 }
 
@@ -982,6 +1062,8 @@ function onLoginSuccess(nickname, sido, sigungu) {
   document.getElementById('login-prompt').classList.remove('open');
   updateAuthHeader();
   updateWritePermission();
+  // v1.7.0: 브라우저 알림 권한 요청
+  setTimeout(function(){ window.requestBrowserNotificationPermission(); }, 800);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1769,6 +1851,16 @@ window.votePost=function(id,dir){
   if(!p)return;
   p.votes_up+=dir>0?1:0;
   p.votes_dn+=dir<0?1:0;
+  // 알림: 내 글이 아닌 경우 작성자에게 보팅 알림 (프로토타입: milestone 5/10/20/50)
+  if (dir > 0 && authState.isLoggedIn && p.user !== authState.user.nickname) {
+    var milestones = [5,10,20,50,100];
+    if (milestones.indexOf(p.votes_up) !== -1) {
+      window.addNotification({
+        type:'vote', postId:p.id, postText:p.text, fromUser:null,
+        text:'내 의견에 '+p.votes_up+'명이 공감했어요.'
+      });
+    }
+  }
   var dv=document.getElementById('post-detail-view');
   if(dv&&dv.style.display!=='none'){dv.innerHTML=window._buildDetailHTML(p);}
   else{renderOpinions();}
@@ -2500,7 +2592,16 @@ window.submitComment = function(postId) {
   });
   // 게시글 댓글 수 갱신
   var post = ALL_POSTS.find(function(p){return p.id===postId;});
-  if (post) post.comments++;
+  if (post) {
+    post.comments++;
+    // 알림: 내 글에 댓글이 달렸을 때 (작성자가 나인 경우 알림 생성)
+    if (authState.isLoggedIn && post.user === authState.user.nickname) {
+      window.addNotification({
+        type:'comment', postId:post.id, postText:post.text,
+        fromUser:nickname, text:text
+      });
+    }
+  }
   ta.value = '';
   var wrap = document.getElementById('comments-wrap-'+postId);
   if (wrap) wrap.innerHTML = window._buildCommentHTML(postId);
@@ -2528,6 +2629,14 @@ window.submitReply = function(commentId, postId) {
   });
   var post = ALL_POSTS.find(function(p){return p.id===postId;});
   if (post) post.comments++;
+  // 알림: 내 댓글에 답글이 달렸을 때
+  if (authState.isLoggedIn && parent.user === authState.user.nickname) {
+    window.addNotification({
+      type:'reply', postId:postId,
+      postText: post ? post.text : '',
+      fromUser: nickname, text: text
+    });
+  }
   ta.value = '';
   var wrap = document.getElementById('comments-wrap-'+postId);
   if (wrap) wrap.innerHTML = window._buildCommentHTML(postId);
@@ -2672,6 +2781,224 @@ window._buildDetailHTML = function(post, isMobile) {
 
   return html2;
 };
+
+
+
+// ═══════════════════════════════════════════════════════
+// v1.7.0 — 알림 시스템
+// ═══════════════════════════════════════════════════════
+
+// ── 알림 추가
+window.addNotification = function(opts) {
+  var n = {
+    id: 'n_' + (++_notiIdCounter),
+    type: opts.type,
+    postId: opts.postId || null,
+    postText: opts.postText || null,
+    fromUser: opts.fromUser || null,
+    text: opts.text || '',
+    mins_ago: 0,
+    read: false
+  };
+  NOTIFICATIONS.unshift(n);
+  window.updateNotiBadge();
+  window.renderNotiDropdown();
+  // 브라우저 알림 (권한 있을 때)
+  window._sendBrowserNotification(n);
+};
+
+// ── 뱃지 업데이트
+window.updateNotiBadge = function() {
+  var badge = document.getElementById('noti-badge');
+  if (!badge) return;
+  var unread = NOTIFICATIONS.filter(function(n){return !n.read;}).length;
+  if (unread > 0) {
+    badge.textContent = unread > 99 ? '99+' : unread;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+};
+
+// ── 알림 패널 토글
+window.toggleNotiPanel = function(e) {
+  if (e) e.stopPropagation();
+  var panel = document.getElementById('noti-panel');
+  if (!panel) return;
+  var isOpen = panel.classList.contains('open');
+  // 프로필 드롭다운 닫기
+  var pbtn = document.getElementById('profile-btn');
+  if (pbtn) pbtn.classList.remove('open');
+  if (!isOpen) {
+    window.renderNotiDropdown();
+    panel.classList.add('open');
+  } else {
+    panel.classList.remove('open');
+  }
+};
+
+// ── 알림 패널 닫기
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('noti-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    var panel = document.getElementById('noti-panel');
+    if (panel) panel.classList.remove('open');
+  }
+});
+
+// ── 알림 시간 포맷
+function _notiTimeStr(mins) {
+  if (mins < 1) return '방금 전';
+  if (mins < 60) return mins + '분 전';
+  var h = Math.floor(mins / 60);
+  if (h < 24) return h + '시간 전';
+  return Math.floor(h / 24) + '일 전';
+}
+
+// ── 알림 아이콘/레이블
+function _notiMeta(type) {
+  if (type === 'comment') return { icon: '💬', cls: 'comment' };
+  if (type === 'reply')   return { icon: '↩️', cls: 'reply' };
+  if (type === 'vote')    return { icon: '👍', cls: 'vote' };
+  if (type === 'notice')  return { icon: '📢', cls: 'notice' };
+  return { icon: '🔔', cls: 'comment' };
+}
+
+// ── 알림 본문 생성
+function _buildNotiItemHTML(n) {
+  var meta = _notiMeta(n.type);
+  var bodyText = '';
+  if (n.type === 'notice') {
+    bodyText = n.text;
+  } else if (n.type === 'vote') {
+    bodyText = n.text;
+  } else if (n.type === 'comment') {
+    bodyText = '<strong>' + escapeHtml(n.fromUser) + '</strong>님이 댓글을 남겼어요.';
+  } else if (n.type === 'reply') {
+    bodyText = '<strong>' + escapeHtml(n.fromUser) + '</strong>님이 답글을 달았어요.';
+  }
+  var quoteHtml = (n.postText)
+    ? '<div class="noti-body-quote">' + escapeHtml(n.postText.substring(0,40)) + (n.postText.length>40?'…':'') + '</div>'
+    : '';
+  var commentHtml = (n.text && (n.type==='comment'||n.type==='reply'))
+    ? '<div class="noti-body-quote" style="color:var(--text-dim);">"' + escapeHtml(n.text.substring(0,40)) + (n.text.length>40?'…':'') + '"</div>'
+    : '';
+  return '<div class="noti-item'+(n.read?'':' unread')+'" onclick="window._notiItemClick(\''+n.id+'\','+JSON.stringify(n.postId)+');event.stopPropagation();">'
+    + '<div class="noti-icon '+meta.cls+'">'+meta.icon+'</div>'
+    + '<div class="noti-body">'
+    + '<div class="noti-body-text">'+bodyText+'</div>'
+    + quoteHtml
+    + commentHtml
+    + '<div class="noti-time">'+_notiTimeStr(n.mins_ago)+'</div>'
+    + '</div>'
+    + (n.read ? '' : '<div class="noti-unread-dot"></div>')
+    + '</div>';
+}
+
+// ── 드롭다운 렌더
+window.renderNotiDropdown = function() {
+  var panel = document.getElementById('noti-panel');
+  if (!panel) return;
+  var list = NOTIFICATIONS.slice(0, 6);
+  var itemsHtml = list.length === 0
+    ? '<div class="noti-empty">알림이 없어요 🔔</div>'
+    : list.map(_buildNotiItemHTML).join('');
+  panel.innerHTML = '<div class="noti-panel-header">'
+    + '<span class="noti-panel-title">알림</span>'
+    + '<button class="noti-readall-btn" onclick="window.markAllRead();event.stopPropagation();">모두 읽음</button>'
+    + '</div>'
+    + '<div class="noti-list">'+itemsHtml+'</div>'
+    + '<div class="noti-footer">'
+    + '<button class="noti-footer-btn" onclick="window.openNotiModal();event.stopPropagation();">알림 전체 보기</button>'
+    + '</div>';
+};
+
+// ── 알림 클릭: 읽음 처리 + 해당 게시글 이동
+window._notiItemClick = function(notiId, postId) {
+  var n = NOTIFICATIONS.find(function(x){return x.id===notiId;});
+  if (n) n.read = true;
+  window.updateNotiBadge();
+  window.renderNotiDropdown();
+  var panel = document.getElementById('noti-panel');
+  if (panel) panel.classList.remove('open');
+  if (postId) {
+    var post = ALL_POSTS.find(function(p){return p.id===postId;});
+    if (post) window.openPostDetail(postId);
+  }
+};
+
+// ── 모두 읽음
+window.markAllRead = function() {
+  NOTIFICATIONS.forEach(function(n){ n.read = true; });
+  window.updateNotiBadge();
+  window.renderNotiDropdown();
+  window._renderNotiModalList();
+};
+
+// ── 전체 알림 모달
+window.openNotiModal = function() {
+  var panel = document.getElementById('noti-panel');
+  if (panel) panel.classList.remove('open');
+  var overlay = document.getElementById('noti-modal-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  window._renderNotiModalList();
+};
+window.closeNotiModal = function() {
+  var overlay = document.getElementById('noti-modal-overlay');
+  if (overlay) overlay.classList.remove('open');
+};
+
+window._setNotiFilter = function(f) {
+  _notiFilter = f;
+  document.querySelectorAll('.noti-filter-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.nf === f);
+  });
+  window._renderNotiModalList();
+};
+
+window._renderNotiModalList = function() {
+  var body = document.getElementById('noti-modal-body');
+  if (!body) return;
+  var filtered = _notiFilter === 'all'
+    ? NOTIFICATIONS
+    : NOTIFICATIONS.filter(function(n){return n.type===_notiFilter;});
+  var itemsHtml = filtered.length === 0
+    ? '<div class="noti-empty" style="padding:40px 14px;">해당 알림이 없어요.</div>'
+    : filtered.map(_buildNotiItemHTML).join('');
+  body.innerHTML = itemsHtml;
+};
+
+// ── PWA 브라우저 알림
+window._sendBrowserNotification = function(n) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  var meta = _notiMeta(n.type);
+  var title = n.type === 'notice' ? '📢 공지' : n.type === 'comment' ? '💬 새 댓글' : n.type === 'reply' ? '↩️ 새 답글' : '👍 공감';
+  var body = n.text.substring(0, 80);
+  try {
+    new Notification(title, { body: body, icon: '/favicon.ico', tag: n.id });
+  } catch(e) {}
+};
+
+// ── 브라우저 알림 권한 요청 (로그인 성공 시 호출)
+window.requestBrowserNotificationPermission = function() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(function(result) {
+      if (result === 'granted') {
+        // 권한 획득 시 환영 알림
+        try {
+          new Notification('지도정치 알림 켜짐 🔔', {
+            body: '댓글, 답글, 보팅 알림을 받을 수 있어요.',
+            tag: 'permission-granted'
+          });
+        } catch(e) {}
+      }
+    });
+  }
+};
+
 
 // Expose resize fn
 window._mapResizeFn = function(){
@@ -2842,5 +3169,27 @@ window._mapResizeFn = function(){
 <div id="image-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:4000;display:none;align-items:center;justify-content:center;" onclick="this.style.display='none'">
   <img id="image-viewer-img" style="max-width:90vw;max-height:88vh;border-radius:8px;object-fit:contain;">
 </div>
+
+<!-- ── v1.7.0 전체 알림 모달 ── -->
+<div id="noti-modal-overlay" class="noti-modal-overlay" onclick="window.closeNotiModal()">
+  <div class="noti-modal-box" onclick="event.stopPropagation()">
+    <div class="noti-modal-header">
+      <span class="noti-modal-title">알림</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="noti-readall-btn" onclick="window.markAllRead()">모두 읽음</button>
+        <button class="noti-modal-close" onclick="window.closeNotiModal()">✕</button>
+      </div>
+    </div>
+    <div class="noti-filter-row">
+      <button class="noti-filter-btn active" data-nf="all"    onclick="window._setNotiFilter('all')">전체</button>
+      <button class="noti-filter-btn"        data-nf="comment" onclick="window._setNotiFilter('comment')">💬 댓글</button>
+      <button class="noti-filter-btn"        data-nf="reply"   onclick="window._setNotiFilter('reply')">↩️ 답글</button>
+      <button class="noti-filter-btn"        data-nf="vote"    onclick="window._setNotiFilter('vote')">👍 공감</button>
+      <button class="noti-filter-btn"        data-nf="notice"  onclick="window._setNotiFilter('notice')">📢 공지</button>
+    </div>
+    <div class="noti-modal-body" id="noti-modal-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
