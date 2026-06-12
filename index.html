@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- 지도정치 v1.4.0 | 2026-06-11 | base: v1.2.4 | feat: 로그인 UI -->
+<!-- 지도정치 v1.5.0 | 2026-06-12 | base: v1.4.0 | feat: 댓글/답글 -->
 
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>지도정치 v1.4.0</title>
+<title>지도정치 v1.5.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
@@ -364,6 +364,45 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD
 /* hidden post placeholder */
 .post-hidden{padding:10px 16px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-faint);display:flex;align-items:center;gap:6px;}
 .post-hidden button{background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;font-family:inherit;text-decoration:underline;}
+
+/* ── v1.5.0 댓글/답글 ── */
+.comment-toggle-btn{display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--text-faint);font-size:11px;cursor:pointer;padding:4px 0;font-family:inherit;margin-top:4px;}
+.comment-toggle-btn:hover{color:var(--accent);}
+.comment-toggle-btn .ct-count{font-weight:700;color:var(--accent);}
+.comments-wrap{display:none;border-top:1px solid var(--border);margin-top:6px;padding-top:8px;}
+.comments-wrap.open{display:block;}
+.comment-sort-bar{display:flex;gap:4px;margin-bottom:8px;}
+.csort-btn{background:none;border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-size:10px;color:var(--text-faint);cursor:pointer;font-family:inherit;}
+.csort-btn.active{background:var(--accent);border-color:var(--accent);color:#1A1F36;font-weight:700;}
+.comment-item{padding:7px 0;border-bottom:1px solid var(--border);}
+.comment-item:last-child{border-bottom:none;}
+.comment-header{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.comment-avatar{width:20px;height:20px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text-dim);flex-shrink:0;}
+.comment-user{font-size:11px;font-weight:700;color:var(--text);}
+.comment-time{font-size:10px;color:var(--text-faint);}
+.comment-text{font-size:12px;color:var(--text);line-height:1.55;padding-left:26px;margin-bottom:4px;}
+.comment-text .mention{color:var(--accent);font-weight:600;}
+.comment-actions{display:flex;align-items:center;gap:8px;padding-left:26px;}
+.cact-btn{background:none;border:none;font-size:10px;color:var(--text-faint);cursor:pointer;font-family:inherit;padding:0;}
+.cact-btn:hover{color:var(--accent);}
+.cact-btn.voted{color:var(--accent);font-weight:700;}
+.replies-wrap{padding-left:26px;margin-top:4px;}
+.reply-item{padding:5px 0 5px 10px;border-left:2px solid var(--border);margin-bottom:4px;}
+.reply-item:last-child{margin-bottom:0;}
+.comment-write-wrap{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
+.comment-write-row{display:flex;gap:6px;align-items:flex-start;}
+.comment-write-row textarea{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:none;min-height:36px;max-height:100px;background:var(--surface);color:var(--text);font-family:inherit;line-height:1.4;}
+.comment-write-row textarea:focus{border-color:var(--accent);outline:none;}
+.comment-write-row textarea:disabled{background:var(--surface2);cursor:not-allowed;color:var(--text-faint);}
+.comment-send-btn{background:var(--accent);color:#1A1F36;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;align-self:flex-end;}
+.comment-send-btn:disabled{background:var(--border);color:var(--text-faint);cursor:not-allowed;}
+.reply-write-wrap{padding-left:26px;margin-top:4px;}
+.reply-form{display:none;gap:5px;align-items:flex-start;margin-top:4px;}
+.reply-form.open{display:flex;}
+.reply-form textarea{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:11px;resize:none;min-height:32px;max-height:80px;background:var(--surface);color:var(--text);font-family:inherit;}
+.reply-form textarea:focus{border-color:var(--accent);outline:none;}
+.reply-form button{background:var(--accent);color:#1A1F36;border:none;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;align-self:flex-end;}
+.no-comments{text-align:center;color:var(--text-faint);font-size:11px;padding:12px 0;}
 </style>
 </head>
 <body>
@@ -687,6 +726,38 @@ var ALL_POSTS=[{"id":1,"sido":"41","sigungu":null,"electoral":null,"sido_name":"
 ,{"id":190,"sido":"36","sigungu":"세종시","electoral":null,"sido_name":"세종특별자치시","sigungu_name":"세종시","lean":"center","text":"세종시 자족 기능 강화 없이는 베드타운에서 벗어나기 어렵습니다.","votes_up":200,"votes_dn":18,"comments":50,"views":1000,"mins_ago":230,"user":"익명세종시1","hot_score":218}];
 
 // ★ 가상의 내 위치 (작성 권한 체크용)
+// ══════════════════════════════════════════════════════
+// v1.5.0 — 댓글 데이터 & 상태
+// ══════════════════════════════════════════════════════
+var COMMENTS_DATA = {
+  1: [
+    {id:'c_1_1',user:'서울시민77',text:'소상공인 지원은 진작에 했어야 했는데, 이제라도 논의되는 게 다행이네요.',votes:12,voted:false,mins_ago:210,replies:[
+      {id:'r_1_1_1',user:'경기도민',text:'@서울시민77 맞아요, 특히 전통시장 살리기가 핵심이라고 생각합니다.',votes:4,voted:false,mins_ago:180},
+      {id:'r_1_1_2',user:'익명44',text:'@서울시민77 근데 예산은 어디서 나오죠? 그게 문제 아닌가요.',votes:2,voted:false,mins_ago:150}
+    ]},
+    {id:'c_1_2',user:'정책연구원',text:'단순 자금 지원보다 규제 완화가 더 효과적이라는 연구 결과가 많습니다.',votes:8,voted:false,mins_ago:140,replies:[]},
+    {id:'c_1_3',user:'동대문주민',text:'우리 동네 상인들도 많이 힘들어하고 있어요. 빨리 실행됐으면 좋겠습니다.',votes:5,voted:false,mins_ago:60,replies:[
+      {id:'r_1_3_1',user:'익명90',text:'@동대문주민 저도 공감해요. 공실률이 너무 높아졌어요.',votes:3,voted:false,mins_ago:40}
+    ]}
+  ],
+  2: [
+    {id:'c_2_1',user:'부산시민',text:'남북 경협 이야기가 나올 때마다 가슴이 두근두근하네요.',votes:7,voted:false,mins_ago:300,replies:[
+      {id:'r_2_1_1',user:'통일관심러',text:'@부산시민 저도요! 실질적인 교류가 이루어졌으면 좋겠어요.',votes:2,voted:false,mins_ago:260}
+    ]},
+    {id:'c_2_2',user:'안보전문가',text:'현실적인 리스크도 같이 고려해야 합니다. 너무 낙관적으로만 보면 안 돼요.',votes:15,voted:false,mins_ago:200,replies:[]}
+  ],
+  3: [
+    {id:'c_3_1',user:'환경운동가',text:'탄소 중립은 선택이 아니라 필수입니다. 늦었지만 환영해요.',votes:20,voted:false,mins_ago:500,replies:[
+      {id:'r_3_1_1',user:'기업인A',text:'@환경운동가 기업 입장에서는 전환 비용이 너무 큰 게 사실입니다.',votes:6,voted:false,mins_ago:450},
+      {id:'r_3_1_2',user:'환경운동가',text:'@기업인A 그래서 정부 지원이 필요한 거죠. 같이 가야 해요.',votes:9,voted:false,mins_ago:420}
+    ]},
+    {id:'c_3_2',user:'현실주의자',text:'좋은 취지지만 속도가 너무 빠르면 부작용이 생길 수도 있어요.',votes:5,voted:false,mins_ago:350,replies:[]}
+  ]
+};
+var _commentSort = {};      // { postId: 'new'|'hot' }
+var openCommentPosts = new Set();
+var _nextCommentId = 9000;
+
 var MY_LOC = { sido: '11', sigungu: '동대문구' };
 
 var _panelExpanded = false;
@@ -1612,6 +1683,20 @@ function renderOpinions(){
       +'<span class="post-action" style="color:#9BA3B8;">👁 '+p.views+'</span>'
       +'<span class="post-time">'+fmtTime(p.mins_ago)+'</span>'
       +'</div>'
+      +(function(){
+        var cmts = COMMENTS_DATA[p.id] || [];
+        var total = cmts.reduce(function(a,c){return a + 1 + c.replies.length;}, 0);
+        var isOpen = openCommentPosts.has(p.id);
+        return '<button class="comment-toggle-btn" onclick="window.toggleComments('+p.id+')">'
+          +'💬 '
+          +(total > 0 ? '<span class="ct-count">'+total+'</span> ' : '')
+          +'댓글'
+          +(isOpen ? ' 접기 ▲' : ' 보기 ▼')
+          +'</button>'
+          +'<div class="comments-wrap'+(isOpen?' open':'')+'" id="comments-wrap-'+p.id+'">'
+          +(isOpen ? window._buildCommentHTML(p.id) : '')
+          +'</div>';
+      })()
       +'</div>';
   }).join('');
   if(window.syncMobilePanel) window.syncMobilePanel();
@@ -2193,6 +2278,224 @@ window.syncMobilePanel = function() {
   document.getElementById('mobile-panel-bc').innerHTML = bcHtml;
   document.getElementById('m-opinions-list').innerHTML = document.getElementById('opinions-list').innerHTML;
   document.getElementById('m-news-list').innerHTML = document.getElementById('news-list').innerHTML;
+};
+
+
+// ══════════════════════════════════════════════════════
+// v1.5.0 — 댓글/답글 함수
+// ══════════════════════════════════════════════════════
+
+// 댓글 텍스트에서 @mention 강조 처리
+function renderMention(text) {
+  return escapeHtml(text).replace(/@(\S+)/g, '<span class="mention">@$1</span>');
+}
+
+// 댓글 HTML 빌드 (내부 헬퍼, window에 노출)
+window._buildCommentHTML = function(postId) {
+  var cmts = COMMENTS_DATA[postId] ? COMMENTS_DATA[postId].slice() : [];
+  if (cmts.length === 0) {
+    var canWrite = authState.isLoggedIn;
+    return '<div class="no-comments">첫 댓글을 남겨보세요 💬</div>' + _buildCommentWriteRow(postId, canWrite);
+  }
+  var sort = _commentSort[postId] || 'new';
+  if (sort === 'new') {
+    cmts.sort(function(a,b){ return a.mins_ago - b.mins_ago; });
+  } else {
+    cmts.sort(function(a,b){ return b.votes - a.votes; });
+  }
+  var canWrite = authState.isLoggedIn;
+
+  var html2 = '<div class="comment-sort-bar">'
+    + '<button class="csort-btn'+(sort==='new'?' active':'')+'" onclick="window.setCommentSort('+postId+',\'new\')">최신순</button>'
+    + '<button class="csort-btn'+(sort==='hot'?' active':'')+'" onclick="window.setCommentSort('+postId+',\'hot\')">좋아요순</button>'
+    + '</div>';
+
+  cmts.forEach(function(c) {
+    var av = c.user ? c.user.charAt(0) : '?';
+    var voteClass = c.voted ? ' voted' : '';
+    html2 += '<div class="comment-item" id="ci-'+c.id+'">'
+      + '<div class="comment-header">'
+      + '<div class="comment-avatar">'+escapeHtml(av)+'</div>'
+      + '<span class="comment-user">'+escapeHtml(c.user)+'</span>'
+      + '<span class="comment-time">'+fmtTime(c.mins_ago)+'</span>'
+      + '</div>'
+      + '<div class="comment-text">'+renderMention(c.text)+'</div>'
+      + '<div class="comment-actions">'
+      + '<button class="cact-btn'+voteClass+'" onclick="window.voteComment(\''+c.id+'\','+postId+')">▲ '+c.votes+'</button>'
+      + '<button class="cact-btn" onclick="window.showReplyForm(\''+c.id+'\',\''+escapeHtml(c.user)+'\','+postId+')">답글</button>'
+      + '</div>';
+
+    // 답글
+    if (c.replies && c.replies.length > 0) {
+      html2 += '<div class="replies-wrap">';
+      c.replies.forEach(function(r) {
+        var rav = r.user ? r.user.charAt(0) : '?';
+        var rvClass = r.voted ? ' voted' : '';
+        html2 += '<div class="reply-item" id="ci-'+r.id+'">'
+          + '<div class="comment-header">'
+          + '<div class="comment-avatar" style="width:16px;height:16px;font-size:8px;">'+escapeHtml(rav)+'</div>'
+          + '<span class="comment-user">'+escapeHtml(r.user)+'</span>'
+          + '<span class="comment-time">'+fmtTime(r.mins_ago)+'</span>'
+          + '</div>'
+          + '<div class="comment-text">'+renderMention(r.text)+'</div>'
+          + '<div class="comment-actions">'
+          + '<button class="cact-btn'+rvClass+'" onclick="window.voteComment(\''+r.id+'\','+postId+')">▲ '+r.votes+'</button>'
+          + '</div>'
+          + '</div>';
+      });
+      html2 += '</div>';
+    }
+
+    // 답글 입력 폼
+    html2 += '<div class="reply-write-wrap">'
+      + '<div class="reply-form" id="reply-form-'+c.id+'">'
+      + '<textarea id="reply-ta-'+c.id+'" placeholder="@'+escapeHtml(c.user)+' 에게 답글..." maxlength="200"'
+      + (canWrite ? '' : ' disabled') + '></textarea>'
+      + '<button onclick="window.submitReply(\''+c.id+'\','+postId+')"'+(canWrite?'':' disabled')+'>등록</button>'
+      + '</div></div>'
+      + '</div>';
+  });
+
+  html2 += _buildCommentWriteRow(postId, canWrite);
+  return html2;
+};
+
+function _buildCommentWriteRow(postId, canWrite) {
+  var ph = canWrite ? '댓글을 입력하세요...' : '로그인 후 댓글을 남길 수 있어요';
+  return '<div class="comment-write-wrap"><div class="comment-write-row">'
+    + '<textarea id="ctw-'+postId+'" placeholder="'+ph+'" maxlength="200"'+(canWrite?'':' disabled')+'></textarea>'
+    + '<button class="comment-send-btn" onclick="window.submitComment('+postId+')"'+(canWrite?'':' disabled')+'>등록</button>'
+    + '</div></div>';
+}
+
+// 댓글 섹션 토글
+window.toggleComments = function(postId) {
+  var wrap = document.getElementById('comments-wrap-'+postId);
+  if (!wrap) return;
+  var isOpen = openCommentPosts.has(postId);
+  if (isOpen) {
+    openCommentPosts.delete(postId);
+    wrap.classList.remove('open');
+    wrap.innerHTML = '';
+  } else {
+    openCommentPosts.add(postId);
+    wrap.classList.add('open');
+    wrap.innerHTML = window._buildCommentHTML(postId);
+  }
+  // 토글 버튼 텍스트 갱신
+  var btns = document.querySelectorAll('.comment-toggle-btn');
+  btns.forEach(function(btn) {
+    var attr = btn.getAttribute('onclick') || '';
+    if (attr.indexOf('toggleComments('+postId+')') >= 0) {
+      var cmts = COMMENTS_DATA[postId] || [];
+      var total = cmts.reduce(function(a,c){return a + 1 + c.replies.length;}, 0);
+      var nowOpen = openCommentPosts.has(postId);
+      btn.innerHTML = '💬 '
+        + (total > 0 ? '<span class="ct-count">'+total+'</span> ' : '')
+        + '댓글'
+        + (nowOpen ? ' 접기 ▲' : ' 보기 ▼');
+    }
+  });
+};
+
+// 정렬 변경
+window.setCommentSort = function(postId, mode) {
+  _commentSort[postId] = mode;
+  var wrap = document.getElementById('comments-wrap-'+postId);
+  if (wrap && wrap.classList.contains('open')) {
+    wrap.innerHTML = window._buildCommentHTML(postId);
+  }
+};
+
+// 댓글 좋아요
+window.voteComment = function(commentId, postId) {
+  if (!authState.isLoggedIn) { window.openLoginModal(); return; }
+  // 모든 댓글/답글에서 찾기
+  var found = false;
+  var cmts = COMMENTS_DATA[postId] || [];
+  cmts.forEach(function(c) {
+    if (c.id === commentId) {
+      if (!c.voted) { c.votes++; c.voted = true; }
+      found = true;
+    }
+    (c.replies||[]).forEach(function(r) {
+      if (r.id === commentId) {
+        if (!r.voted) { r.votes++; r.voted = true; }
+        found = true;
+      }
+    });
+  });
+  if (found) {
+    var wrap = document.getElementById('comments-wrap-'+postId);
+    if (wrap && wrap.classList.contains('open')) {
+      wrap.innerHTML = window._buildCommentHTML(postId);
+    }
+  }
+};
+
+// 답글 폼 열기
+window.showReplyForm = function(commentId, username, postId) {
+  if (!authState.isLoggedIn) { window.openLoginModal(); return; }
+  // 다른 열린 폼 닫기
+  document.querySelectorAll('.reply-form.open').forEach(function(f){ f.classList.remove('open'); });
+  var form = document.getElementById('reply-form-'+commentId);
+  if (!form) return;
+  form.classList.add('open');
+  var ta = document.getElementById('reply-ta-'+commentId);
+  if (ta) { ta.value = '@'+username+' '; ta.focus(); }
+};
+
+// 댓글 등록
+window.submitComment = function(postId) {
+  if (!authState.isLoggedIn) { window.openLoginModal(); return; }
+  var ta = document.getElementById('ctw-'+postId);
+  if (!ta) return;
+  var text = ta.value.trim();
+  if (!text) return;
+  var nickname = authState.user ? authState.user.nickname : '나';
+  if (!COMMENTS_DATA[postId]) COMMENTS_DATA[postId] = [];
+  COMMENTS_DATA[postId].unshift({
+    id: 'c_new_'+(++_nextCommentId),
+    user: nickname,
+    text: text,
+    votes: 0,
+    voted: false,
+    mins_ago: 0,
+    replies: []
+  });
+  // 게시글 댓글 수 갱신
+  var post = ALL_POSTS.find(function(p){return p.id===postId;});
+  if (post) post.comments++;
+  ta.value = '';
+  var wrap = document.getElementById('comments-wrap-'+postId);
+  if (wrap) wrap.innerHTML = window._buildCommentHTML(postId);
+};
+
+// 답글 등록
+window.submitReply = function(commentId, postId) {
+  if (!authState.isLoggedIn) { window.openLoginModal(); return; }
+  var ta = document.getElementById('reply-ta-'+commentId);
+  if (!ta) return;
+  var text = ta.value.trim();
+  if (!text) return;
+  var nickname = authState.user ? authState.user.nickname : '나';
+  var cmts = COMMENTS_DATA[postId] || [];
+  var parent = cmts.find(function(c){return c.id===commentId;});
+  if (!parent) return;
+  if (!parent.replies) parent.replies = [];
+  parent.replies.push({
+    id: 'r_new_'+(++_nextCommentId),
+    user: nickname,
+    text: text,
+    votes: 0,
+    voted: false,
+    mins_ago: 0
+  });
+  var post = ALL_POSTS.find(function(p){return p.id===postId;});
+  if (post) post.comments++;
+  ta.value = '';
+  var wrap = document.getElementById('comments-wrap-'+postId);
+  if (wrap) wrap.innerHTML = window._buildCommentHTML(postId);
 };
 
 // Expose resize fn
