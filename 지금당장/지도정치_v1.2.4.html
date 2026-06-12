@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- 지도정치 v1.3.0 | 2026-06-11 | base: v1.2.4 | feat: 로그인 UI -->
+<!-- 지도정치 v1.2.4 | 2026-06-11 | base: v1.2.3 -->
 
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>지도정치 v1.3.0</title>
+<title>지도정치 v1.2.4</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
@@ -209,83 +209,15 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR','Apple SD
   .mobile-drag-handle{display:none;}
 }
 #mobile-panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:190;}
-
-/* ══ 로그인 모달 공통 ══ */
-.modal-overlay{position:fixed;inset:0;background:rgba(20,26,50,.55);backdrop-filter:blur(3px);z-index:2000;display:none;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal-box{background:#fff;border-radius:16px;box-shadow:0 16px 60px rgba(20,26,60,.18);padding:32px 28px;width:90%;max-width:400px;position:relative;animation:modal-in .22s ease;}
-@keyframes modal-in{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.modal-close{position:absolute;top:14px;right:16px;width:28px;height:28px;border:none;background:none;font-size:18px;color:var(--text-faint);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .14s;}
-.modal-close:hover{background:var(--surface2);}
-.modal-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;}
-.modal-sub{font-size:12px;color:var(--text-dim);margin-bottom:24px;}
-.modal-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-faint);font-size:11px;}
-.modal-divider::before,.modal-divider::after{content:'';flex:1;height:1px;background:var(--border);}
-
-/* 소셜 로그인 버튼 */
-.social-btn{width:100%;padding:12px 16px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:filter .15s;font-family:inherit;margin-bottom:10px;}
-.social-btn:last-child{margin-bottom:0;}
-.social-btn:hover{filter:brightness(.94);}
-.social-kakao{background:#FEE500;color:#191919;}
-.social-naver{background:#03C75A;color:#fff;}
-.social-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;}
-
-/* 핸드폰 인증 */
-.phone-step{display:none;flex-direction:column;gap:12px;}
-.phone-step.active{display:flex;}
-.phone-input-wrap{display:flex;gap:8px;}
-.phone-input{flex:1;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;transition:border .15s;}
-.phone-input:focus{border-color:var(--accent);}
-.phone-input.error{border-color:#D84040;}
-.phone-send-btn{padding:11px 14px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:filter .15s;}
-.phone-send-btn:hover{filter:brightness(.9);}
-.phone-send-btn:disabled{background:var(--text-faint);cursor:default;}
-.otp-wrap{display:flex;gap:7px;justify-content:center;}
-.otp-input{width:44px;height:50px;border:1.5px solid var(--border);border-radius:9px;text-align:center;font-size:20px;font-weight:700;font-family:inherit;outline:none;transition:border .15s;}
-.otp-input:focus{border-color:var(--accent);}
-.phone-timer{font-size:12px;color:#D84040;font-weight:700;text-align:right;}
-.phone-hint{font-size:11px;color:var(--text-faint);text-align:center;line-height:1.6;}
-.phone-confirm-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .15s;}
-.phone-confirm-btn:hover{filter:brightness(.9);}
-.phone-confirm-btn:disabled{background:var(--text-faint);cursor:default;}
-
-/* 완료 스텝 */
-.auth-done{text-align:center;padding:12px 0;}
-.auth-done-icon{font-size:44px;margin-bottom:12px;}
-.auth-done-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;}
-.auth-done-sub{font-size:12px;color:var(--text-dim);}
-
-/* 헤더 프로필 드롭다운 */
-.profile-btn{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;color:var(--text-dim);font-family:inherit;transition:all .15s;position:relative;}
-.profile-btn:hover{border-color:var(--accent);color:var(--accent);}
-.profile-avatar{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
-.profile-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px var(--shadow);min-width:160px;z-index:100;overflow:hidden;display:none;}
-.profile-btn.open .profile-dropdown{display:block;}
-.profile-dropdown-item{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;color:var(--text-dim);cursor:pointer;transition:background .12s;}
-.profile-dropdown-item:hover{background:var(--surface2);}
-.profile-dropdown-item.danger{color:#D84040;}
-.profile-dropdown-divider{height:1px;background:var(--border);margin:2px 0;}
-
-/* 비로그인 열람 제한 프롬프트 */
-.login-prompt-overlay{position:fixed;bottom:0;left:0;right:0;z-index:1500;display:none;flex-direction:column;pointer-events:none;}
-.login-prompt-overlay.open{display:flex;}
-.login-prompt-blur{flex:1;background:linear-gradient(to bottom, rgba(244,246,250,0) 0%, rgba(244,246,250,.92) 100%);pointer-events:none;}
-.login-prompt-card{background:#fff;border-top:1px solid var(--border);box-shadow:0 -6px 24px var(--shadow);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:all;}
-.login-prompt-text{flex:1;}
-.login-prompt-title{font-size:14px;font-weight:800;color:var(--text);margin-bottom:3px;}
-.login-prompt-sub{font-size:12px;color:var(--text-dim);}
-.login-prompt-btns{display:flex;gap:8px;flex-shrink:0;}
-
 </style>
 </head>
 <body>
 
 <nav class="topnav">
   <div class="logo">지도<span>정치</span></div>
-  <div id="auth-header" style="display:flex;gap:6px;align-items:center;">
-    <!-- JS updateAuthHeader()로 동적 교체 -->
-    <button class="nbtn nbtn-ghost" onclick="window.openLoginModal()">로그인</button>
-    <button class="nbtn nbtn-primary" onclick="window.openLoginModal()">회원가입</button>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button class="nbtn nbtn-ghost">로그인</button>
+    <button class="nbtn nbtn-primary">회원가입</button>
   </div>
 </nav>
 
@@ -655,239 +587,6 @@ var TOPO_TO_STD={
 // ══════════════════════════════════════════════════════
 // 상태
 // ══════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════
-// Auth State
-// ══════════════════════════════════════════════════════
-var authState = {
-  isLoggedIn: false,
-  user: null,        // { id, nickname, sido, sigungu }
-  pendingSocial: null,  // 소셜 로그인 후 폰 인증 전 임시 저장
-  viewCount: 0,
-  VIEW_LIMIT: 5,
-  promptDismissed: false,
-};
-
-// ── 열람 카운트 증가 (비로그인 시 N회 후 프롬프트)
-function incrementViewCount() {
-  if (authState.isLoggedIn || authState.promptDismissed) return;
-  authState.viewCount++;
-  if (authState.viewCount >= authState.VIEW_LIMIT) {
-    showLoginPrompt();
-  }
-}
-
-// ── 로그인 프롬프트
-function showLoginPrompt() {
-  document.getElementById('login-prompt').classList.add('open');
-}
-window.dismissLoginPrompt = function() {
-  authState.promptDismissed = true;
-  document.getElementById('login-prompt').classList.remove('open');
-};
-
-// ── 헤더 업데이트
-function updateAuthHeader() {
-  var el = document.getElementById('auth-header');
-  if (!el) return;
-  if (!authState.isLoggedIn) {
-    el.innerHTML = '<button class="nbtn nbtn-ghost" onclick="window.openLoginModal()">로그인</button>'
-      + '<button class="nbtn nbtn-primary" onclick="window.openLoginModal()">회원가입</button>';
-  } else {
-    var u = authState.user;
-    var initials = (u.nickname||'?').charAt(0);
-    el.innerHTML = '<div class="profile-btn" id="profile-btn" onclick="window.toggleProfileDropdown()">'
-      + '<div class="profile-avatar">' + initials + '</div>'
-      + '<span>' + u.nickname + '</span>'
-      + '<span style="font-size:9px;color:var(--text-faint);">▾</span>'
-      + '<div class="profile-dropdown" id="profile-dropdown">'
-      + '<div class="profile-dropdown-item" onclick="alert('마이페이지 — 준비 중')">👤 마이페이지</div>'
-      + '<div class="profile-dropdown-item" onclick="alert('내 의견 — 준비 중')">📝 내 의견</div>'
-      + '<div class="profile-dropdown-divider"></div>'
-      + '<div class="profile-dropdown-item danger" onclick="window.logout()">🚪 로그아웃</div>'
-      + '</div></div>';
-  }
-}
-
-window.toggleProfileDropdown = function() {
-  var btn = document.getElementById('profile-btn');
-  if (btn) btn.classList.toggle('open');
-};
-document.addEventListener('click', function(e) {
-  var btn = document.getElementById('profile-btn');
-  if (btn && !btn.contains(e.target)) btn.classList.remove('open');
-});
-
-// ── 소셜 로그인 (모의)
-window.socialLogin = function(provider) {
-  authState.pendingSocial = { provider: provider, id: 'mock_' + provider + '_' + Date.now() };
-  closeLoginModal();
-  openPhoneModal();
-};
-
-// ── 로그아웃
-window.logout = function() {
-  authState.isLoggedIn = false;
-  authState.user = null;
-  authState.viewCount = 0;
-  authState.promptDismissed = false;
-  updateAuthHeader();
-  updateWritePermission();
-  var btn = document.getElementById('profile-btn');
-  if (btn) btn.classList.remove('open');
-};
-
-// ── 로그인 완료 처리
-function onLoginSuccess(nickname, sido, sigungu) {
-  authState.isLoggedIn = true;
-  authState.user = { id: authState.pendingSocial.id, nickname: nickname, sido: sido, sigungu: sigungu };
-  authState.pendingSocial = null;
-  authState.promptDismissed = true;
-  document.getElementById('login-prompt').classList.remove('open');
-  updateAuthHeader();
-  updateWritePermission();
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Login Modal
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-window.openLoginModal = function() {
-  document.getElementById('modal-login').classList.add('open');
-  document.getElementById('login-prompt').classList.remove('open');
-};
-window.closeLoginModal = function() {
-  document.getElementById('modal-login').classList.remove('open');
-};
-window._loginOverlayClick = function(e) {
-  if (e.target === document.getElementById('modal-login')) window.closeLoginModal();
-};
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Phone Modal + OTP
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-var _otpTimer = null;
-var _otpCode = null;  // 모의 OTP — 실제 구현 시 서버에서 발급
-
-function openPhoneModal() {
-  // 스텝 리셋
-  ['phone-step-1','phone-step-2','phone-step-3'].forEach(function(id){
-    document.getElementById(id).classList.remove('active');
-  });
-  document.getElementById('phone-step-1').classList.add('active');
-  document.getElementById('phone-number-input').value = '';
-  document.getElementById('phone-send-btn').disabled = true;
-  document.getElementById('phone-input-hint').textContent = '하이픈(-) 없이 숫자만 입력해 주세요';
-  document.getElementById('phone-input-hint').style.color = 'var(--text-faint)';
-  clearOTPTimer();
-  document.getElementById('modal-phone').classList.add('open');
-}
-window.closePhoneModal = function() {
-  document.getElementById('modal-phone').classList.remove('open');
-  clearOTPTimer();
-};
-window._phoneOverlayClick = function(e) {
-  if (e.target === document.getElementById('modal-phone')) window.closePhoneModal();
-};
-
-window.onPhoneInput = function(el) {
-  var v = el.value.replace(/\D/g,'');
-  el.value = v;
-  var ok = /^01[0-9]{8,9}$/.test(v);
-  document.getElementById('phone-send-btn').disabled = !ok;
-  document.getElementById('phone-input-hint').textContent = ok ? '✅ 형식이 올바릅니다' : '하이픈(-) 없이 숫자만 입력해 주세요';
-  document.getElementById('phone-input-hint').style.color = ok ? '#2DA44E' : 'var(--text-faint)';
-};
-
-window.sendOTP = function() {
-  var phone = document.getElementById('phone-number-input').value;
-  // 모의: 실제 구현 시 POST /auth/phone/send-otp
-  _otpCode = '123456';  // 데모: 항상 123456
-  
-  // SHA-256 해시 계산 (실제 API 전송 시 사용)
-  if (window.crypto && window.crypto.subtle) {
-    var enc = new TextEncoder();
-    window.crypto.subtle.digest('SHA-256', enc.encode(phone)).then(function(hashBuffer) {
-      var hashArray = Array.from(new Uint8Array(hashBuffer));
-      var hashHex = hashArray.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      console.log('[지도정치] phone_hash:', hashHex, '(API 전송 시 사용)');
-    });
-  }
-  
-  document.getElementById('phone-step-1').classList.remove('active');
-  document.getElementById('phone-step-2').classList.add('active');
-  document.getElementById('otp-sub-text').textContent = phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') + ' 으로 전송됨';
-  document.getElementById('otp-error').style.display = 'none';
-  document.getElementById('otp-confirm-btn').disabled = true;
-  document.querySelectorAll('.otp-input').forEach(function(el){ el.value=''; });
-  startOTPTimer(180);
-  setTimeout(function(){ document.querySelectorAll('.otp-input')[0].focus(); }, 100);
-};
-
-window.onOTPInput = function(el, idx) {
-  el.value = el.value.replace(/\D/g,'').slice(-1);
-  if (el.value) {
-    var next = document.querySelectorAll('.otp-input')[idx+1];
-    if (next) next.focus();
-  }
-  var code = Array.from(document.querySelectorAll('.otp-input')).map(function(e){return e.value;}).join('');
-  document.getElementById('otp-confirm-btn').disabled = code.length < 6;
-};
-window.onOTPKey = function(el, idx, e) {
-  if (e.key==='Backspace' && !el.value && idx>0) {
-    var prev = document.querySelectorAll('.otp-input')[idx-1];
-    if (prev) { prev.value=''; prev.focus(); }
-  }
-};
-window.resendOTP = function() {
-  clearOTPTimer();
-  window.sendOTP();
-};
-
-function startOTPTimer(sec) {
-  var remaining = sec;
-  function tick() {
-    var m = Math.floor(remaining/60);
-    var s = remaining%60;
-    var timerEl = document.getElementById('otp-timer');
-    if (timerEl) timerEl.textContent = m+':'+(s<10?'0':'')+s;
-    if (remaining <= 0) {
-      clearOTPTimer();
-      if (timerEl) timerEl.textContent = '만료';
-      document.getElementById('otp-confirm-btn').disabled = true;
-    }
-    remaining--;
-  }
-  tick();
-  _otpTimer = setInterval(tick, 1000);
-}
-function clearOTPTimer() {
-  if (_otpTimer) { clearInterval(_otpTimer); _otpTimer = null; }
-}
-
-window.confirmOTP = function() {
-  var entered = Array.from(document.querySelectorAll('.otp-input')).map(function(e){return e.value;}).join('');
-  // 데모: 123456 또는 실제 코드 매칭
-  if (entered !== _otpCode && entered !== '123456') {
-    document.getElementById('otp-error').style.display = 'inline';
-    document.querySelectorAll('.otp-input').forEach(function(el){ el.style.borderColor='#D84040'; });
-    return;
-  }
-  clearOTPTimer();
-  document.getElementById('otp-error').style.display = 'none';
-  document.getElementById('phone-step-2').classList.remove('active');
-  document.getElementById('phone-step-3').classList.add('active');
-  
-  // 닉네임 생성 (데모)
-  var adjectives = ['따뜻한','활발한','진지한','현명한','씩씩한'];
-  var nouns = ['시민','유권자','이웃','주민','국민'];
-  var nickname = adjectives[Math.floor(Math.random()*adjectives.length)] + nouns[Math.floor(Math.random()*nouns.length)] + Math.floor(Math.random()*999+1);
-  document.getElementById('done-nickname').textContent = nickname + '님, 가입을 축하드려요!';
-  
-  onLoginSuccess(nickname, MY_LOC.sido, MY_LOC.sigungu);
-  setTimeout(function(){ window.closePhoneModal(); }, 2200);
-};
-
-
 var state = {
   depth: 0,
   selectedSido: null,
@@ -967,7 +666,6 @@ function sortPosts(posts,mode){
 // 권한 체크 로직
 // ══════════════════════════════════════════════════════
 function checkWritePermission() {
-  if (!authState.isLoggedIn) return false;  // 로그인 필수
   if (state.depth === 0) return true;
   var stdSido = TOPO_TO_STD[state.selectedSido] || state.selectedSido;
   if (state.depth >= 1 && stdSido !== MY_LOC.sido) return false;
@@ -997,26 +695,16 @@ function updateWritePermission() {
   } else {
     taDesktop.disabled = true;
     btnDesktop.disabled = true;
+    btnDesktop.textContent = '불가';
+    var _myLoc = SIDO_NAMES[MY_LOC.sido] + ' ' + MY_LOC.sigungu;
+    taDesktop.placeholder = '✏️ ' + SIDO_NAMES[MY_LOC.sido] + ', ' + _myLoc + ', 중앙정부에서만 작성 가능합니다.';
+    taDesktop.value = '';
+    
     taMobile.disabled = true;
     btnMobile.disabled = true;
-    taDesktop.value = '';
+    btnMobile.textContent = '불가';
+    taMobile.placeholder = '✏️ ' + _myLoc + ', 중앙정부만 작성 가능합니다.';
     taMobile.value = '';
-    if (!authState.isLoggedIn) {
-      btnDesktop.textContent = '로그인 필요';
-      btnMobile.textContent = '로그인 필요';
-      taDesktop.placeholder = '✏️ 로그인 후 의견을 작성할 수 있습니다.';
-      taMobile.placeholder = '✏️ 로그인 후 작성 가능합니다.';
-      btnDesktop.onclick = function(){ window.openLoginModal(); };
-      btnMobile.onclick = function(){ window.openLoginModal(); };
-    } else {
-      btnDesktop.textContent = '불가';
-      btnMobile.textContent = '불가';
-      btnDesktop.onclick = null;
-      btnMobile.onclick = null;
-      var _myLoc = SIDO_NAMES[MY_LOC.sido] + ' ' + MY_LOC.sigungu;
-      taDesktop.placeholder = '✏️ ' + SIDO_NAMES[MY_LOC.sido] + ', ' + _myLoc + ', 중앙정부에서만 작성 가능합니다.';
-      taMobile.placeholder = '✏️ ' + _myLoc + ', 중앙정부만 작성 가능합니다.';
-    }
   }
 }
 
@@ -1126,7 +814,6 @@ Promise.all([d3.json(URL_SIDO), d3.json(URL_SIGUNGU)]).then(function(data) {
 
     document.getElementById('map-loader').style.display='none';
     updateMapLayers();
-    updateAuthHeader();      // 헤더 초기화
     updateWritePermission(); // 초기 로드 권한 체크
 
   } catch(e) {
@@ -1415,7 +1102,6 @@ function renderActiveTab(){
 }
 
 function renderOpinions(){
-  incrementViewCount();
   var posts=getFilteredPosts();
   var el=document.getElementById('opinions-list');
   if(posts.length===0){
@@ -1471,7 +1157,6 @@ function renderWrite(){
 // Voting
 // ══════════════════════════════════════════════════════
 window.votePost=function(id,dir){
-  if(!authState.isLoggedIn){window.openLoginModal();return;}
   if(!checkWritePermission()){alert('현재 위치한 지역(' + SIDO_NAMES[MY_LOC.sido] + ' ' + MY_LOC.sigungu + ') 또는 중앙정부 게시물에만 반응할 수 있습니다.');return;}
   var p=ALL_POSTS.find(function(x){return x.id===id;});
   if(!p)return;
@@ -1693,124 +1378,6 @@ window._mapResizeFn = function(){
 
 })();
 </script>
-
-
-<!-- ═══════════════════════════════════════════════
-     로그인 모달
-═══════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-login" onclick="window._loginOverlayClick(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="window.closeLoginModal()">✕</button>
-    <div class="modal-title">지도정치 시작하기</div>
-    <div class="modal-sub">내 지역 정치 현안에 목소리를 내보세요</div>
-
-    <button class="social-btn social-kakao" onclick="window.socialLogin('kakao')">
-      <span class="social-icon" style="background:#191919;color:#FEE500;border-radius:6px;font-size:12px;padding:2px 5px;font-weight:900;">K</span>
-      카카오로 시작하기
-    </button>
-    <button class="social-btn social-naver" onclick="window.socialLogin('naver')">
-      <span class="social-icon" style="background:#fff;color:#03C75A;border-radius:6px;font-size:14px;padding:0 4px;font-weight:900;">N</span>
-      네이버로 시작하기
-    </button>
-
-    <div style="margin-top:18px;padding:12px 14px;background:#F8F9FE;border-radius:10px;border:1px solid #EAECF5;">
-      <div style="font-size:11px;color:var(--text-dim);line-height:1.7;">
-        🔒 소셜 로그인 후 <strong>핸드폰 번호 인증</strong>이 필요합니다.<br>
-        번호는 SHA-256 해시로 저장되며 원본은 저장되지 않습니다.<br>
-        <span style="color:var(--text-faint);">만 14세 이상만 가입 가능합니다.</span>
-      </div>
-    </div>
-
-    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text-faint);">
-      계속하면 <span style="color:var(--accent);cursor:pointer;">이용약관</span> 및
-      <span style="color:var(--accent);cursor:pointer;">개인정보처리방침</span>에 동의하게 됩니다
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════
-     핸드폰 인증 모달
-═══════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-phone" onclick="window._phoneOverlayClick(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="window.closePhoneModal()">✕</button>
-
-    <!-- Step 1: 번호 입력 -->
-    <div class="phone-step active" id="phone-step-1">
-      <div class="modal-title">핸드폰 번호 인증</div>
-      <div class="modal-sub">중복 가입 방지를 위해 본인 인증이 필요합니다</div>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:5px;">핸드폰 번호</div>
-        <div class="phone-input-wrap">
-          <input class="phone-input" id="phone-number-input" type="tel" maxlength="11"
-            placeholder="01012345678" oninput="window.onPhoneInput(this)">
-          <button class="phone-send-btn" id="phone-send-btn" onclick="window.sendOTP()" disabled>
-            인증번호 받기
-          </button>
-        </div>
-        <div id="phone-input-hint" style="font-size:11px;color:var(--text-faint);margin-top:5px;">
-          하이픈(-) 없이 숫자만 입력해 주세요
-        </div>
-      </div>
-      <div class="phone-hint" style="margin-top:4px;">
-        번호는 SHA-256 해시로 저장되며<br>원본은 서버에 저장되지 않습니다
-      </div>
-    </div>
-
-    <!-- Step 2: OTP 입력 -->
-    <div class="phone-step" id="phone-step-2">
-      <div class="modal-title">인증번호 입력</div>
-      <div class="modal-sub" id="otp-sub-text">문자로 전송된 6자리를 입력해 주세요</div>
-      <div class="otp-wrap" id="otp-inputs">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,0)" onkeydown="window.onOTPKey(this,0,event)">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,1)" onkeydown="window.onOTPKey(this,1,event)">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,2)" onkeydown="window.onOTPKey(this,2,event)">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,3)" onkeydown="window.onOTPKey(this,3,event)">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,4)" onkeydown="window.onOTPKey(this,4,event)">
-        <input class="otp-input" maxlength="1" type="text" inputmode="numeric" oninput="window.onOTPInput(this,5)" onkeydown="window.onOTPKey(this,5,event)">
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span id="otp-error" style="font-size:11px;color:#D84040;display:none;">인증번호가 올바르지 않습니다</span>
-        <span class="phone-timer" id="otp-timer" style="margin-left:auto;">3:00</span>
-      </div>
-      <button class="phone-confirm-btn" id="otp-confirm-btn" onclick="window.confirmOTP()" disabled>확인</button>
-      <div style="text-align:center;">
-        <span style="font-size:11px;color:var(--text-faint);cursor:pointer;" onclick="window.resendOTP()">
-          📱 인증번호 재발송
-        </span>
-      </div>
-    </div>
-
-    <!-- Step 3: 완료 -->
-    <div class="phone-step" id="phone-step-3">
-      <div class="auth-done">
-        <div class="auth-done-icon">🎉</div>
-        <div class="auth-done-title" id="done-nickname">가입 완료!</div>
-        <div class="auth-done-sub">지역 현안에 자유롭게 의견을 남겨보세요</div>
-        <div style="margin-top:20px;">
-          <button class="phone-confirm-btn" onclick="window.closePhoneModal()">시작하기</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════
-     비로그인 열람 제한 프롬프트
-═══════════════════════════════════════════════ -->
-<div class="login-prompt-overlay" id="login-prompt">
-  <div class="login-prompt-blur" style="height:80px;"></div>
-  <div class="login-prompt-card">
-    <div class="login-prompt-text">
-      <div class="login-prompt-title">더 많은 의견을 보려면 로그인하세요</div>
-      <div class="login-prompt-sub">지역 주민과 함께 정치 현안을 토론해 보세요 🗳️</div>
-    </div>
-    <div class="login-prompt-btns">
-      <button class="nbtn nbtn-ghost" style="font-size:12px;" onclick="window.dismissLoginPrompt()">나중에</button>
-      <button class="nbtn nbtn-primary" style="font-size:12px;" onclick="window.openLoginModal()">로그인</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
