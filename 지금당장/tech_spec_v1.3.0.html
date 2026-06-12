@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<!-- 지도정치 기술명세서 v1.3.0 | 2026-06-11 | feat: 로그인 UI -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지도정치 — 기술명세서 v1.3.0 | 로그인 UI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0D0F14; --surface: #161922; --surface2: #1E222E; --border: #2A2F3E;
+  --accent: #C8D400; --blue: #2B72C8; --red: #C82020; --green: #2ECC71;
+  --orange: #E67E22; --purple: #8B5CF6; --teal: #14B8A6; --pink: #EC4899;
+  --kakao: #FEE500; --naver: #03C75A;
+  --text: #E8EAF0; --text-dim: #7A8099; --text-faint: #3D4257;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; padding: 32px 24px; min-height: 100vh; max-width: 960px; margin: 0 auto; }
+
+.doc-header { margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.doc-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.doc-title span { color: var(--accent); }
+.doc-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--text-dim); margin-top: 10px; }
+.doc-meta-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; }
+.doc-meta-chip.new { border-color: rgba(200,212,0,.35); color: var(--accent); }
+
+.section-title { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); margin: 32px 0 14px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px; }
+.summary-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.summary-num { font-size: 26px; font-weight: 900; margin-bottom: 4px; }
+.summary-lbl { font-size: 11px; color: var(--text-dim); }
+
+.tbl-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.tbl-header { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 2px solid var(--border); font-size: 13px; font-weight: 700; }
+.spec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.spec-table th { background: var(--surface2); color: var(--text-dim); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+.spec-table td { padding: 9px 14px; border-bottom: 1px solid rgba(42,47,62,.6); vertical-align: top; line-height: 1.6; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--surface2); }
+
+.flow-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; overflow-x: auto; margin-bottom: 8px; }
+.flow-row { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; margin-bottom: 8px; }
+.flow-row:last-child { margin-bottom: 0; }
+.flow-node { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; white-space: nowrap; text-align: center; min-width: 110px; }
+.flow-node.start { border-color: var(--accent); color: var(--accent); }
+.flow-node.action { border-color: var(--blue); color: #7BAED4; }
+.flow-node.check { border-color: var(--orange); color: var(--orange); background: rgba(230,126,34,.06); border-radius: 20px; }
+.flow-node.success { border-color: var(--green); color: var(--green); }
+.flow-node.error { border-color: var(--red); color: var(--red); }
+.flow-node.kakao { border-color: #FEE500; color: #191919; background: rgba(254,229,0,.1); }
+.flow-arrow { color: var(--text-faint); font-size: 16px; padding: 0 8px; flex-shrink: 0; }
+
+.code-block { background: #0A0C10; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.8; overflow-x: auto; margin-bottom: 12px; }
+.code-comment { color: #4A5060; }
+.code-key { color: var(--purple); }
+.code-val { color: var(--teal); }
+.code-str { color: var(--green); }
+.code-num { color: var(--orange); }
+.code-bool { color: var(--accent); }
+.code-fn { color: var(--blue); }
+.code-type { color: #EC4899; }
+
+.state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.state-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.state-card-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.state-card-body { padding: 12px 14px; font-size: 12px; }
+.state-field { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgba(42,47,62,.4); }
+.state-field:last-child { border-bottom: none; }
+.sf-name { color: var(--purple); font-family: monospace; }
+.sf-type { color: var(--teal); font-family: monospace; font-size: 11px; flex-shrink: 0; }
+.sf-desc { color: var(--text-dim); font-size: 11px; flex: 1; text-align: right; }
+
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.comp-header { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.comp-name { font-family: monospace; color: var(--teal); font-size: 13px; font-weight: 700; }
+.comp-type { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+.ctype-modal { background: rgba(20,184,166,.1); color: var(--teal); }
+.ctype-hook { background: rgba(139,92,246,.1); color: var(--purple); }
+.ctype-util { background: rgba(46,204,113,.1); color: var(--green); }
+.comp-body { padding: 12px 16px; font-size: 11px; color: var(--text-dim); line-height: 1.9; }
+.comp-prop { display: flex; gap: 8px; margin-bottom: 3px; }
+.prop-name { color: var(--purple); font-family: monospace; flex-shrink: 0; }
+.prop-colon { color: var(--text-faint); }
+.prop-type { color: var(--teal); font-family: monospace; }
+
+.api-row { display: grid; grid-template-columns: 56px 200px 1fr auto; gap: 10px; align-items: start; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.api-row:last-child { border-bottom: none; }
+.api-row:hover { background: var(--surface2); }
+.method { display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 5px; letter-spacing: .06em; font-family: monospace; white-space: nowrap; }
+.POST { background: rgba(43,114,200,.12); color: #2B72C8; }
+.GET  { background: rgba(46,204,113,.12); color: #2ECC71; }
+.ep-path { font-family: monospace; color: var(--accent); font-size: 12px; }
+.ep-desc { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+.auth-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+.auth-pub  { background: rgba(46,204,113,.1); color: var(--green); }
+.auth-user { background: rgba(43,114,200,.1); color: var(--blue); }
+
+.sec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sec-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.sec-icon { font-size: 22px; margin-bottom: 8px; }
+.sec-title { font-size: 13px; font-weight: 800; margin-bottom: 6px; color: var(--accent); }
+.sec-body { font-size: 11px; color: var(--text-dim); line-height: 1.9; }
+
+.badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; letter-spacing: .04em; }
+.badge-new    { background: rgba(200,212,0,.15); color: var(--accent); }
+.badge-ui     { background: rgba(43,114,200,.15); color: var(--blue); }
+.badge-mock   { background: rgba(230,126,34,.15); color: var(--orange); }
+.badge-secure { background: rgba(139,92,246,.15); color: var(--purple); }
+.badge-phase  { background: rgba(46,204,113,.1); color: var(--green); }
+
+.changelog { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.cl-row { display: grid; grid-template-columns: 80px 90px 1fr; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12px; align-items: center; }
+.cl-row:last-child { border-bottom: none; }
+.cl-ver { font-family: monospace; color: var(--accent); font-weight: 700; }
+.cl-desc { color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <span class="badge badge-new">NEW</span>
+    <span class="badge badge-phase">Phase 1</span>
+    <span style="font-size:11px;color:var(--text-faint);">지도정치 / 기술명세서</span>
+  </div>
+  <div class="doc-title">지도<span>정치</span> 기술명세서 — 로그인 UI</div>
+  <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">v1.3.0 · Phase 1 인증·계정 · 2026-06-11</div>
+  <div class="doc-meta">
+    <span class="doc-meta-chip">베이스: 지도정치 v1.2.4</span>
+    <span class="doc-meta-chip new">산출물: 지도정치 v1.3.0</span>
+    <span class="doc-meta-chip">스택: Vanilla JS 프로토타입 → React 포팅 예정</span>
+    <span class="doc-meta-chip">Phase 1 #1 — 로그인 / 인증</span>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section-title">구현 요약</div>
+<div class="summary-grid">
+  <div class="summary-cell"><div class="summary-num" style="color:var(--accent)">3</div><div class="summary-lbl">신규 모달 UI</div></div>
+  <div class="summary-cell"><div class="summary-num" style="color:var(--blue)">2</div><div class="summary-lbl">소셜 로그인 제공자</div></div>
+  <div class="summary-cell"><div class="summary-num" style="color:var(--purple)">5</div><div class="summary-lbl">연동 예정 API</div></div>
+  <div class="summary-cell"><div class="summary-num" style="color:var(--green)">4</div><div class="summary-lbl">권한 연동 포인트</div></div>
+</div>
+
+<!-- SCOPE -->
+<div class="section-title">작업 범위</div>
+<div class="tbl-wrap">
+  <table class="spec-table">
+    <thead><tr><th>구분</th><th>항목</th><th>상태</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>헤더 인증 영역</td><td>비로그인 / 로그인 상태 동적 전환</td><td><span class="badge badge-new">완료</span></td><td>updateAuthHeader()</td></tr>
+      <tr><td>로그인 모달</td><td>카카오 / 네이버 소셜 버튼 + 이용약관 안내</td><td><span class="badge badge-new">완료</span></td><td>#modal-login</td></tr>
+      <tr><td>핸드폰 인증 모달</td><td>번호 입력 → OTP 6자리 → 완료 3단계</td><td><span class="badge badge-new">완료</span></td><td>#modal-phone</td></tr>
+      <tr><td>SHA-256 해시</td><td>SubtleCrypto API로 번호 해시 계산</td><td><span class="badge badge-new">완료</span></td><td>콘솔 출력 (데모)</td></tr>
+      <tr><td>OTP 타이머</td><td>3분 카운트다운, 만료 시 재발송 유도</td><td><span class="badge badge-new">완료</span></td><td>데모 코드: 123456</td></tr>
+      <tr><td>비로그인 열람 제한</td><td>5회 열람 후 하단 프롬프트 (레딧 방식)</td><td><span class="badge badge-new">완료</span></td><td>#login-prompt</td></tr>
+      <tr><td>의견 작성 권한</td><td>비로그인 → "로그인 필요" 버튼 + 모달 오픈</td><td><span class="badge badge-new">완료</span></td><td>checkWritePermission()</td></tr>
+      <tr><td>보팅 권한</td><td>비로그인 보팅 클릭 → 로그인 모달 오픈</td><td><span class="badge badge-new">완료</span></td><td>votePost()</td></tr>
+      <tr><td>프로필 드롭다운</td><td>로그인 후 닉네임 아이콘 + 메뉴</td><td><span class="badge badge-new">완료</span></td><td>toggleProfileDropdown()</td></tr>
+      <tr><td>실제 OAuth 연동</td><td>카카오 / 네이버 SDK</td><td><span class="badge badge-mock">백엔드 연동 시</span></td><td>현재 모의 처리</td></tr>
+      <tr><td>실제 SMS 발송</td><td>NHN Cloud / CoolSMS 등</td><td><span class="badge badge-mock">백엔드 연동 시</span></td><td>현재 모의 처리</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FLOW -->
+<div class="section-title">인증 플로우</div>
+<div class="flow-wrap">
+  <div style="font-size:11px;color:var(--text-faint);margin-bottom:14px;font-weight:700;letter-spacing:.06em;">① 신규 가입 플로우</div>
+  <div class="flow-row">
+    <div class="flow-node start">로그인 버튼</div><div class="flow-arrow">→</div>
+    <div class="flow-node action">로그인 모달</div><div class="flow-arrow">→</div>
+    <div class="flow-node kakao">소셜 선택</div><div class="flow-arrow">→</div>
+    <div class="flow-node action">핸드폰 인증</div><div class="flow-arrow">→</div>
+    <div class="flow-node action">OTP 입력</div><div class="flow-arrow">→</div>
+    <div class="flow-node check">코드 일치?</div><div class="flow-arrow">→ Yes →</div>
+    <div class="flow-node success">가입 완료</div>
+  </div>
+  <div style="height:18px;border-left:1px solid var(--border);margin-left:730px;"></div>
+  <div class="flow-row" style="padding-left:730px;">
+    <div class="flow-arrow">→ No →</div><div class="flow-node error">오류 표시</div>
+  </div>
+
+  <div style="height:20px;"></div>
+  <div style="font-size:11px;color:var(--text-faint);margin-bottom:14px;font-weight:700;letter-spacing:.06em;">② 비로그인 열람 제한</div>
+  <div class="flow-row">
+    <div class="flow-node start">의견 열람</div><div class="flow-arrow">→</div>
+    <div class="flow-node check">횟수 ≥ 5?</div><div class="flow-arrow">→ Yes →</div>
+    <div class="flow-node action">하단 프롬프트</div><div class="flow-arrow">→</div>
+    <div class="flow-node check">로그인?</div><div class="flow-arrow">→ Yes →</div>
+    <div class="flow-node success">열람 제한 해제</div>
+  </div>
+
+  <div style="height:20px;"></div>
+  <div style="font-size:11px;color:var(--text-faint);margin-bottom:14px;font-weight:700;letter-spacing:.06em;">③ 쓰기 권한 체크</div>
+  <div class="flow-row">
+    <div class="flow-node start">작성 / 보팅</div><div class="flow-arrow">→</div>
+    <div class="flow-node check">로그인?</div><div class="flow-arrow">→ No →</div>
+    <div class="flow-node error">로그인 모달</div>
+  </div>
+  <div style="height:10px;border-left:1px solid var(--border);margin-left:135px;"></div>
+  <div class="flow-row" style="padding-left:115px;">
+    <div class="flow-arrow">↓ Yes</div>
+  </div>
+  <div class="flow-row" style="padding-left:115px;">
+    <div class="flow-node check">내 위치 권역?</div><div class="flow-arrow">→ No →</div>
+    <div class="flow-node error">권한 없음</div>
+  </div>
+  <div style="height:10px;border-left:1px solid var(--border);margin-left:245px;"></div>
+  <div class="flow-row" style="padding-left:225px;">
+    <div class="flow-arrow">↓ Yes</div>
+  </div>
+  <div class="flow-row" style="padding-left:225px;">
+    <div class="flow-node success">허용</div>
+  </div>
+</div>
+
+<!-- STATE -->
+<div class="section-title">상태 설계 (authState)</div>
+<div class="state-grid">
+  <div class="state-card">
+    <div class="state-card-header">
+      <span>🗂️</span>
+      <span style="font-family:monospace;color:var(--teal);">authState</span>
+      <span class="badge badge-ui" style="margin-left:auto;">JS 전역 객체</span>
+    </div>
+    <div class="state-card-body">
+      <div class="state-field"><span class="sf-name">isLoggedIn</span><span class="sf-type">boolean</span><span class="sf-desc">로그인 여부</span></div>
+      <div class="state-field"><span class="sf-name">user</span><span class="sf-type">object|null</span><span class="sf-desc">사용자 정보</span></div>
+      <div class="state-field"><span class="sf-name">user.id</span><span class="sf-type">string</span><span class="sf-desc">소셜 ID</span></div>
+      <div class="state-field"><span class="sf-name">user.nickname</span><span class="sf-type">string</span><span class="sf-desc">닉네임</span></div>
+      <div class="state-field"><span class="sf-name">user.sido</span><span class="sf-type">string</span><span class="sf-desc">표준 시도 코드</span></div>
+      <div class="state-field"><span class="sf-name">user.sigungu</span><span class="sf-type">string</span><span class="sf-desc">시군구명</span></div>
+      <div class="state-field"><span class="sf-name">pendingSocial</span><span class="sf-type">object|null</span><span class="sf-desc">폰 인증 전 임시</span></div>
+      <div class="state-field"><span class="sf-name">viewCount</span><span class="sf-type">number</span><span class="sf-desc">비로그인 열람 횟수</span></div>
+      <div class="state-field"><span class="sf-name">VIEW_LIMIT</span><span class="sf-type">number = 5</span><span class="sf-desc">프롬프트 임계값</span></div>
+      <div class="state-field"><span class="sf-name">promptDismissed</span><span class="sf-type">boolean</span><span class="sf-desc">프롬프트 닫기</span></div>
+    </div>
+  </div>
+  <div class="state-card">
+    <div class="state-card-header">
+      <span>⚙️</span>
+      <span style="font-family:monospace;color:var(--orange);">React 전환 → Zustand</span>
+    </div>
+    <div class="state-card-body">
+      <div class="code-block" style="font-size:11px;">
+<span class="code-comment">// src/store/authStore.ts</span>
+<span class="code-key">interface</span> <span class="code-type">AuthState</span> {
+  isLoggedIn: <span class="code-type">boolean</span>;
+  user: <span class="code-type">User</span> | <span class="code-bool">null</span>;
+  accessToken: <span class="code-type">string</span> | <span class="code-bool">null</span>;
+  viewCount: <span class="code-type">number</span>;
+  promptDismissed: <span class="code-type">boolean</span>;
+
+  <span class="code-fn">login</span>: (u: <span class="code-type">User</span>, t: <span class="code-type">string</span>) => <span class="code-type">void</span>;
+  <span class="code-fn">logout</span>: () => <span class="code-type">void</span>;
+  <span class="code-fn">incrementView</span>: () => <span class="code-type">void</span>;
+  <span class="code-fn">dismissPrompt</span>: () => <span class="code-type">void</span>;
+}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPONENTS -->
+<div class="section-title">컴포넌트 명세</div>
+<div class="comp-grid">
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">LoginModal</span><span class="comp-type ctype-modal">MODAL</span></div>
+    <div class="comp-body">
+      <div style="color:var(--text-faint);margin-bottom:8px;">소셜 로그인 선택 모달</div>
+      <div class="comp-prop"><span class="prop-name">isOpen</span><span class="prop-colon">:</span><span class="prop-type">boolean</span></div>
+      <div class="comp-prop"><span class="prop-name">onClose</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div class="comp-prop"><span class="prop-name">onKakao</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div class="comp-prop"><span class="prop-name">onNaver</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--text-faint);">backdrop click / ESC → close</div>
+    </div>
+  </div>
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">PhoneVerifyModal</span><span class="comp-type ctype-modal">MODAL</span></div>
+    <div class="comp-body">
+      <div style="color:var(--text-faint);margin-bottom:8px;">3단계 핸드폰 인증 모달</div>
+      <div class="comp-prop"><span class="prop-name">isOpen</span><span class="prop-colon">:</span><span class="prop-type">boolean</span></div>
+      <div class="comp-prop"><span class="prop-name">provider</span><span class="prop-colon">:</span><span class="prop-type">'kakao'|'naver'</span></div>
+      <div class="comp-prop"><span class="prop-name">onSuccess</span><span class="prop-colon">:</span><span class="prop-type">(user: User) => void</span></div>
+      <div class="comp-prop"><span class="prop-name">onClose</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--text-faint);">step: 'phone' | 'otp' | 'done'<br>타이머: 180초, 재발송 가능</div>
+    </div>
+  </div>
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">LoginPromptBanner</span><span class="comp-type ctype-modal">OVERLAY</span></div>
+    <div class="comp-body">
+      <div style="color:var(--text-faint);margin-bottom:8px;">비로그인 열람 제한 배너 (하단 고정)</div>
+      <div class="comp-prop"><span class="prop-name">viewCount</span><span class="prop-colon">:</span><span class="prop-type">number</span></div>
+      <div class="comp-prop"><span class="prop-name">limit</span><span class="prop-colon">:</span><span class="prop-type">number = 5</span></div>
+      <div class="comp-prop"><span class="prop-name">onLogin</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div class="comp-prop"><span class="prop-name">onDismiss</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--text-faint);">blur gradient + 카드 구조<br>pointer-events: none(blur) / all(card)</div>
+    </div>
+  </div>
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">useAuth</span><span class="comp-type ctype-hook">HOOK</span></div>
+    <div class="comp-body">
+      <div style="color:var(--text-faint);margin-bottom:8px;">인증 상태 + 액션 훅</div>
+      <div class="comp-prop"><span class="prop-name">isLoggedIn</span><span class="prop-colon">:</span><span class="prop-type">boolean</span></div>
+      <div class="comp-prop"><span class="prop-name">user</span><span class="prop-colon">:</span><span class="prop-type">User | null</span></div>
+      <div class="comp-prop"><span class="prop-name">openLogin</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div class="comp-prop"><span class="prop-name">logout</span><span class="prop-colon">:</span><span class="prop-type">() => void</span></div>
+      <div class="comp-prop"><span class="prop-name">checkWrite</span><span class="prop-colon">:</span><span class="prop-type">(depth,sido) => boolean</span></div>
+    </div>
+  </div>
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">hashPhone()</span><span class="comp-type ctype-util">UTIL</span></div>
+    <div class="comp-body">
+      <div class="code-block" style="margin:0;font-size:11px;">
+<span class="code-comment">// utils/crypto.ts</span>
+<span class="code-key">async function</span> <span class="code-fn">hashPhone</span>(
+  phone: <span class="code-type">string</span>
+): Promise&lt;<span class="code-type">string</span>&gt; {
+  <span class="code-key">const</span> enc = <span class="code-key">new</span> TextEncoder();
+  <span class="code-key">const</span> buf = <span class="code-key">await</span>
+    crypto.subtle.<span class="code-fn">digest</span>(
+      <span class="code-str">'SHA-256'</span>, enc.<span class="code-fn">encode</span>(phone)
+    );
+  <span class="code-key">return</span> [...<span class="code-key">new</span> Uint8Array(buf)]
+    .<span class="code-fn">map</span>(b=>b.<span class="code-fn">toString</span>(<span class="code-num">16</span>).<span class="code-fn">padStart</span>(<span class="code-num">2</span>,<span class="code-str">'0'</span>))
+    .<span class="code-fn">join</span>(<span class="code-str">''</span>);
+}
+      </div>
+    </div>
+  </div>
+  <div class="comp-card">
+    <div class="comp-header"><span class="comp-name">AuthHeader</span><span class="comp-type ctype-modal">COMPONENT</span></div>
+    <div class="comp-body">
+      <div style="color:var(--text-faint);margin-bottom:8px;">헤더 우측 인증 영역</div>
+      <div style="line-height:2;">
+        <strong style="color:var(--text);">비로그인:</strong> [로그인] [회원가입]<br>
+        <strong style="color:var(--text);">로그인:</strong> 아바타+닉네임 ▾<br>
+        &nbsp;&nbsp;— 마이페이지 (준비 중)<br>
+        &nbsp;&nbsp;— 내 의견 (준비 중)<br>
+        &nbsp;&nbsp;— 로그아웃
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API -->
+<div class="section-title">연동 예정 API — /api/v1/auth</div>
+<div class="tbl-wrap">
+  <div class="tbl-header">
+    <span>🔐</span>
+    <span style="font-family:monospace;color:var(--accent);">/api/v1/auth</span>
+    <span class="badge badge-mock" style="margin-left:auto;">현재 모의 처리</span>
+  </div>
+  <div class="api-row">
+    <span class="method POST">POST</span>
+    <span class="ep-path">/auth/kakao/callback</span>
+    <div><div class="ep-desc">카카오 OAuth code 교환 → JWT 발급</div><div class="ep-desc">body: {code} → {access_token, refresh_token, is_new_user}</div></div>
+    <span class="auth-badge auth-pub">🌐 PUBLIC</span>
+  </div>
+  <div class="api-row">
+    <span class="method POST">POST</span>
+    <span class="ep-path">/auth/naver/callback</span>
+    <div><div class="ep-desc">네이버 OAuth code 교환 → JWT 발급</div><div class="ep-desc">body: {code, state} → {access_token, refresh_token, is_new_user}</div></div>
+    <span class="auth-badge auth-pub">🌐 PUBLIC</span>
+  </div>
+  <div class="api-row">
+    <span class="method POST">POST</span>
+    <span class="ep-path">/auth/phone/send-otp</span>
+    <div><div class="ep-desc">핸드폰 인증번호 발송 (SMS)</div><div class="ep-desc">body: {phone_hash} → {session_id, expires_in: 180}</div></div>
+    <span class="auth-badge auth-user">🔐 USER</span>
+  </div>
+  <div class="api-row">
+    <span class="method POST">POST</span>
+    <span class="ep-path">/auth/phone/verify</span>
+    <div><div class="ep-desc">OTP 검증 + 번호 인증 완료</div><div class="ep-desc">body: {session_id, code} → {success, phone_verified: true}</div></div>
+    <span class="auth-badge auth-user">🔐 USER</span>
+  </div>
+  <div class="api-row">
+    <span class="method GET">GET</span>
+    <span class="ep-path">/auth/me</span>
+    <div><div class="ep-desc">현재 로그인 사용자 정보 조회</div><div class="ep-desc">→ {id, nickname, sido, sigungu, grade, phone_verified}</div></div>
+    <span class="auth-badge auth-user">🔐 USER</span>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div class="section-title">보안 설계</div>
+<div class="sec-grid">
+  <div class="sec-card">
+    <div class="sec-icon">🔑</div>
+    <div class="sec-title">JWT 전략</div>
+    <div class="sec-body">
+      Access Token: <strong>15분</strong><br>
+      Refresh Token: <strong>30일</strong><br>
+      Access → 메모리 (XSS 방어)<br>
+      Refresh → HttpOnly Cookie<br>
+      만료 → /auth/refresh 자동 호출<br>
+      로그아웃 → Redis 블랙리스트
+    </div>
+  </div>
+  <div class="sec-card">
+    <div class="sec-icon">📱</div>
+    <div class="sec-title">핸드폰 번호 보호</div>
+    <div class="sec-body">
+      원본 번호: <strong>절대 저장 안 함</strong><br>
+      클라이언트: SHA-256 해시 계산<br>
+      서버: 해시값만 DB 저장<br>
+      중복 가입: 해시 비교로 감지<br>
+      역추적: 수학적으로 불가<br>
+      OTP: Redis 3분 TTL
+    </div>
+  </div>
+  <div class="sec-card">
+    <div class="sec-icon">🛡️</div>
+    <div class="sec-title">추가 보안</div>
+    <div class="sec-body">
+      OTP 시도: <strong>5회 제한</strong><br>
+      Rate Limit: 번호당 1분 1회<br>
+      동일 IP 다계정 감지 로그<br>
+      HTTPS 강제 + CSP 헤더<br>
+      CORS 화이트리스트<br>
+      만 14세 미만 차단
+    </div>
+  </div>
+</div>
+
+<!-- DEMO NOTE -->
+<div class="section-title">프로토타입 데모 안내</div>
+<div style="background:rgba(230,126,34,.06);border:1px solid rgba(230,126,34,.25);border-radius:10px;padding:16px 20px;font-size:12px;line-height:2.2;">
+  <div style="font-weight:700;color:var(--orange);margin-bottom:8px;">⚠️ v1.3.0 프로토타입 — 실제 OAuth/SMS 미연동</div>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr><td style="color:var(--text-dim);width:160px;">소셜 로그인</td><td>버튼 클릭 → 즉시 핸드폰 모달 (OAuth 생략)</td></tr>
+    <tr><td style="color:var(--text-dim);">OTP 코드</td><td style="color:var(--accent);font-family:monospace;font-weight:700;">123456</td></tr>
+    <tr><td style="color:var(--text-dim);">닉네임</td><td>랜덤 생성 (예: 따뜻한시민482)</td></tr>
+    <tr><td style="color:var(--text-dim);">SHA-256</td><td>실제 계산 → 브라우저 콘솔에서 확인 가능</td></tr>
+    <tr><td style="color:var(--text-dim);">위치 정보</td><td>MY_LOC 하드코딩 (서울 동대문구)</td></tr>
+  </table>
+</div>
+
+<!-- NEXT -->
+<div class="section-title">다음 단계</div>
+<div class="tbl-wrap">
+  <table class="spec-table">
+    <thead><tr><th>우선순위</th><th>작업</th><th>의존성</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-new">P1</span></td><td>의견 작성 UI — 500자, 수정/삭제, 사진 첨부, OGP 링크</td><td>v1.3.0 로그인</td></tr>
+      <tr><td><span class="badge badge-new">P1</span></td><td>댓글 / 2depth 답글 UI</td><td>v1.3.0 로그인</td></tr>
+      <tr><td><span class="badge badge-ui">P2</span></td><td>React 포팅 + FastAPI 실제 연동</td><td>백엔드 구축</td></tr>
+      <tr><td><span class="badge badge-ui">P2</span></td><td>카카오 / 네이버 OAuth SDK 실제 연동</td><td>앱 키 발급</td></tr>
+      <tr><td><span class="badge badge-mock">P3</span></td><td>알림 시스템 UI</td><td>댓글 완료 후</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- CHANGELOG -->
+<div class="section-title">변경 이력</div>
+<div class="changelog">
+  <div class="cl-row" style="background:var(--surface2);">
+    <div class="cl-ver">v1.3.0</div>
+    <div><span class="badge badge-new">feat</span></div>
+    <div class="cl-desc">로그인 UI 전체 — 소셜 버튼, 핸드폰 인증, 비로그인 제한, 권한 연동 (Phase 1 #1)</div>
+  </div>
+  <div class="cl-row">
+    <div class="cl-ver">v1.2.4</div>
+    <div><span class="badge badge-ui">fix</span></div>
+    <div class="cl-desc">호버 툴팁 뉴스 권역 매칭 (TOPO_TO_STD), 브레드크럼 전국 제거</div>
+  </div>
+  <div class="cl-row">
+    <div class="cl-ver">v1.2.3</div>
+    <div><span class="badge badge-ui">fix</span></div>
+    <div class="cl-desc">시군구 sido 이름, 의견 리프레시 null 에러, 시군구 샘플 데이터</div>
+  </div>
+  <div class="cl-row">
+    <div class="cl-ver">v1.2.2</div>
+    <div><span class="badge badge-ui">fix</span></div>
+    <div class="cl-desc">TOPO_TO_STD 매핑, 전 권역 뉴스·의견 데이터, 의견 필터링</div>
+  </div>
+  <div class="cl-row">
+    <div class="cl-ver">v1.2.1</div>
+    <div><span class="badge badge-ui">feat</span></div>
+    <div class="cl-desc">중앙정부 계층 분리, 브레드크럼, 위치 기반 쓰기 권한</div>
+  </div>
+</div>
+
+<div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);display:flex;justify-content:space-between;">
+  <span>지도정치 기술명세서 v1.3.0</span>
+  <span>2026-06-11 · Phase 1 인증·계정</span>
+</div>
+
+</body>
+</html>
